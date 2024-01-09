@@ -102,8 +102,9 @@ static int game_mode;
 static int game_pause;
 static int game_speed;
 static int move;
-static int thistick;
-static int lasttick;
+static unsigned int ticks;
+static unsigned int thistick;
+static unsigned int lasttick;
 static int diry;
 static int dirx;
 static int numfood;
@@ -232,7 +233,7 @@ static void new_game(void)
     thistick = 0;
     lasttick = 0;
     diry = 0;
-    dirx = 0;
+    dirx = 1;
     numfood = 0;
     numpoison = 0;
     rotatecnt = 0;
@@ -482,12 +483,25 @@ static void update_game(void)
     }
 }
 
-static void draw_block(short y, short x, unsigned char color)
+static void draw_block(short y, short x, unsigned char color, int fade)
 {
+    int pos;
+    unsigned char r = rgb_color[(color * 3) + 0];
+    unsigned char g = rgb_color[(color * 3) + 1];
+    unsigned char b = rgb_color[(color * 3) + 2];
+    if (fade) {
+        pos = ticks % 1000;
+        if (pos > 500) pos = 500 - (pos - 500);
+        pos *= 2;
+
+        r = ((int)r*pos) / 1000;
+        g = ((int)g*pos) / 1000;
+        b = ((int)b*pos) / 1000;
+    }
     int n = (y * GRID_WIDTH) + x;
-    udp_data[2 + (n*3)] = rgb_color[(color * 3) + 0];
-    udp_data[3 + (n*3)] = rgb_color[(color * 3) + 1];
-    udp_data[4 + (n*3)] = rgb_color[(color * 3) + 2];
+    udp_data[2 + (n*3)] = r;
+    udp_data[3 + (n*3)] = g;
+    udp_data[4 + (n*3)] = b;
 }
 
 static void draw_obj(short y, short x)
@@ -521,24 +535,24 @@ static void draw_obj(short y, short x)
     switch (type) {
         /* clear all */
         default:
-            draw_block(y, x, color);
+            draw_block(y, x, color, 0);
             break;
 
         /* box with 1px border */
         case OBJ_WALL:
         case OBJ_SNAKE:
-            draw_block(y, x, color);
+            draw_block(y, x, color, 0);
             break;
 
         case OBJ_SNAKEHEAD:
-            draw_block(y, x, color);
+            draw_block(y, x, color, 0);
             break;
 
         /* circle */
         case OBJ_FOOD:
         case OBJ_SUPERFOOD:
         case OBJ_POISON:
-            draw_block(y, x, color);
+            draw_block(y, x, color, 1);
             break;
     }
 
@@ -547,22 +561,22 @@ static void draw_obj(short y, short x)
 static void draw_game(void)
 {
     short y, x;
-    short i;
+    /*short i;*/
 
-    if (alldirty) {
+    /*if (alldirty) {*/
         for (y = 0; y < GRID_HEIGHT; y++) {
             for (x = 0; x < GRID_WIDTH; x++) {
                 draw_obj(y, x);
             }
         }
-    } else {
+    /*} else {
         for (i = 0; i < dirtylen; i++) {
             y = dirtycells[(i * 2) + 0];
             x = dirtycells[(i * 2) + 1];
 
             draw_obj(y, x);
         }
-    }
+    }*/
 
     alldirty = 0;
     dirtylen = 0;
@@ -572,7 +586,7 @@ static void draw_game(void)
     }
 }
 
-static int get_ticks(void)
+static unsigned int get_ticks(void)
 {
     struct timeval tv = { 0 };
     gettimeofday(&tv, NULL);
@@ -604,10 +618,11 @@ int main(int argc, char *argv[])
     while (game_mode != MODE_EXIT) {
         handle_input();
         if (game_mode == MODE_EXIT) break;
+        ticks = get_ticks();
         if (game_speed == 0) {
-            thistick = get_ticks() / 100;
+            thistick = ticks / 100;
         } else {
-            thistick = get_ticks() / 500;
+            thistick = ticks / 500;
         }
         if (thistick != lasttick) {
             lasttick = thistick;
