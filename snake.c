@@ -100,6 +100,7 @@ static int js_fd;
 static int key_state;
 static int game_mode;
 static int game_pause;
+static int game_speed;
 static int move;
 static int thistick;
 static int lasttick;
@@ -134,6 +135,7 @@ static void init()
     if (udp_fd == -1) perror("socket");
 
     game_mode = MODE_DEAD;
+    game_speed = 0;
 }
 
 static void grid_set(short y, short x, unsigned char type)
@@ -328,6 +330,9 @@ static void handle_input(void)
                 move = MOVE_DOWN;
             }
 
+            if (kidx == KEYPAD_SELECT && kval) {
+                game_speed = ! game_speed;
+            }
             if (kidx == KEYPAD_START && kval) {
                 game_pause = ! game_pause;
             }
@@ -599,7 +604,11 @@ int main(int argc, char *argv[])
     while (game_mode != MODE_EXIT) {
         handle_input();
         if (game_mode == MODE_EXIT) break;
-        thistick = get_ticks() / 500;
+        if (game_speed == 0) {
+            thistick = get_ticks() / 100;
+        } else {
+            thistick = get_ticks() / 500;
+        }
         if (thistick != lasttick) {
             lasttick = thistick;
             if (! game_pause) {
