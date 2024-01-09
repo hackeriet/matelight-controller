@@ -10,8 +10,8 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <termios.h>
 #include <fcntl.h>
+#include <linux/joystick.h>
 
 #define GRID_WIDTH      10
 #define GRID_HEIGHT     20
@@ -43,6 +43,17 @@
 #define SUPERFOOD_FREQ  5
 
 #define ROTATE_TICKS    25
+
+// Keys
+#define KEYPAD_NONE     0
+#define KEYPAD_LEFT     (1 << 0)
+#define KEYPAD_RIGHT    (1 << 1)
+#define KEYPAD_UP       (1 << 2)
+#define KEYPAD_DOWN     (1 << 3)
+#define KEYPAD_SELECT   (1 << 4)
+#define KEYPAD_START    (1 << 5)
+#define KEYPAD_B        (1 << 6)
+#define KEYPAD_A        (1 << 7)
 
 // mode 13h palette
 #define COLOR_BLACK     0
@@ -85,48 +96,44 @@ static const char rgb_color[16 * 3] = {
 
 static struct sockaddr_in udp_sockaddr;
 static int udp_fd;
-static unsigned char game_mode;
-static unsigned char game_pause;
-static unsigned char move;
-static unsigned int thistick;
-static unsigned int lasttick;
-static short diry;
-static short dirx;
-static short numfood;
-static short numpoison;
-static short rotatecnt;
-static unsigned char alldirty;
-static unsigned short dirtylen;
-static unsigned short snakelen;
-static unsigned short wantedlen;
+static int js_fd;
+static int key_state;
+static int game_mode;
+static int game_pause;
+static int move;
+static int thistick;
+static int lasttick;
+static int diry;
+static int dirx;
+static int numfood;
+static int numpoison;
+static int rotatecnt;
+static int alldirty;
+static int dirtylen;
+static int snakelen;
+static int wantedlen;
 static unsigned char grid[GRID_WIDTH * GRID_HEIGHT];
 static unsigned char snake[GRID_WIDTH * GRID_HEIGHT * 2];
 static unsigned char objs[GRID_WIDTH * GRID_HEIGHT * 2];
 static unsigned char dirtycells[GRID_WIDTH * GRID_HEIGHT * 2];
 static unsigned char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 2 /* DGRB */, 1 /* seconds */ };
-static struct termios told, tnew;
 
 static void init()
 {
     int opt;
     srand(time(NULL));
 
-    tcgetattr(0, &told);
-    tnew = told;
-    tnew.c_lflag &= ~ICANON;
-    tnew.c_cc[VMIN] = 1;
-    tnew.c_cc[VTIME] = 0;
-    tcsetattr(0, TCSANOW, &tnew);
-
-
-    opt = fcntl(0, F_GETFL);
+    opt = fcntl(js_fd, F_GETFL);
     if (opt >= 0) {
         opt |= O_NONBLOCK;
-        fcntl(0, F_SETFL, opt);
+        fcntl(js_fd, F_SETFL, opt);
     }
+    key_state = 0;
 
     udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd == -1) perror("socket");
+
+    game_mode = MODE_DEAD;
 }
 
 static void grid_set(short y, short x, unsigned char type)
@@ -240,43 +247,105 @@ static void new_game(void)
 
 static void handle_input(void)
 {
-    unsigned char key;
+    struct js_event event;
+    int kidx = KEYPAD_NONE;
+    int kval = 0;
 
-    if (read(0, &key, 1) != 1)
+    if (read(js_fd, &event, sizeof(event)) != sizeof(event))
         return;
 
-    switch (key) {
-        case 'q':
-        case 'Q':
-            game_mode = MODE_EXIT;
+    switch (event.type) {
+        case JS_EVENT_BUTTON:
+            switch (event.number) {
+                case 8:
+                    kidx = KEYPAD_SELECT;
+                    break;
+                case 9:
+                    kidx = KEYPAD_START;
+                    break;
+                case 0:
+                    kidx = KEYPAD_B;
+                    break;
+                case 1:
+                    kidx = KEYPAD_A;
+                    break;
+                default:
+                    kidx = KEYPAD_NONE;
+                    break;
+            }
+            if (kidx != KEYPAD_NONE) {
+                kval = event.value;
+                if (kval) {
+                    key_state |= kidx;
+                } else {
+                    key_state &= ~kidx;
+                }
+            }
+            break;
+        case JS_EVENT_AXIS:
+            switch (event.number) {
+                case 0:
+                    if (event.value <= -1024) {
+                        key_state |= KEYPAD_LEFT;
+                        key_state &= ~KEYPAD_RIGHT;
+                    } else if (event.value >= 1024) {
+                        key_state &= ~KEYPAD_LEFT;
+                        key_state |= KEYPAD_RIGHT;
+                    } else {
+                        key_state &= ~KEYPAD_LEFT;
+                        key_state &= ~KEYPAD_RIGHT;
+                    }
+                    break;
+                case 1:
+                    if (event.value <= -1024) {
+                        key_state |= KEYPAD_UP;
+                        key_state &= ~KEYPAD_DOWN;
+                    } else if (event.value >= 1024) {
+                        key_state &= ~KEYPAD_UP;
+                        key_state |= KEYPAD_DOWN;
+                    } else {
+                        key_state &= ~KEYPAD_UP;
+                        key_state &= ~KEYPAD_DOWN;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+
+    switch (game_mode) {
+        case MODE_GAME:
+            if (key_state & KEYPAD_LEFT) {
+                move = MOVE_LEFT;
+            } else if (key_state & KEYPAD_RIGHT) {
+                move = MOVE_RIGHT;
+            } else if (key_state & KEYPAD_UP) {
+                move = MOVE_UP;
+            } else if (key_state & KEYPAD_DOWN) {
+                move = MOVE_DOWN;
+            }
+
+            if (kidx == KEYPAD_START && kval) {
+                game_pause = ! game_pause;
+            }
             break;
 
-        case 'w': 
-        case 'W': 
-            move = MOVE_UP;
-            break;
-        case 'a': 
-        case 'A': 
-            move = MOVE_LEFT;
-            break;
-        case 'd': 
-        case 'D': 
-            move = MOVE_RIGHT;
-            break;
-        case 's': 
-        case 'S': 
-            move = MOVE_DOWN;
-            break;
-
-        case 'p': 
-        case 'P': 
-            game_pause = ! game_pause;
-            break;
-
-        case 'r': 
-        case 'R': 
-            new_game();
-            break;
+        case MODE_DEAD:
+            switch (kidx) {
+                case KEYPAD_SELECT:
+                case KEYPAD_START:
+                case KEYPAD_B:
+                case KEYPAD_A:
+                    if (kval) {
+                        new_game();
+                    }
+                    break;
+                default:
+                    break;
+            }
     }
 }
 
@@ -493,7 +562,9 @@ static void draw_game(void)
     alldirty = 0;
     dirtylen = 0;
 
-    sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
+    if (game_mode == MODE_GAME) {
+        sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
+    }
 }
 
 static int get_ticks(void)
@@ -505,21 +576,26 @@ static int get_ticks(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "Usage: snake IP PORT\n");
+    fprintf(stderr, "Usage: snake IP PORT JOYSTICK\n");
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
+    if (argc != 4) {
         usage();
     }
     memset(&udp_sockaddr, '\0', sizeof(udp_sockaddr));
     udp_sockaddr.sin_family = AF_INET;
     udp_sockaddr.sin_port = htons(atoi(argv[2]));
     udp_sockaddr.sin_addr.s_addr = inet_addr(argv[1]);
+    js_fd = open(argv[3], O_RDONLY);
+    if (js_fd == -1) {
+        perror(argv[3]);
+        exit(EXIT_FAILURE);
+    }
     init();
-    new_game();
+    //new_game();
     while (game_mode != MODE_EXIT) {
         handle_input();
         if (game_mode == MODE_EXIT) break;
@@ -533,5 +609,4 @@ int main(int argc, char *argv[])
         draw_game();
         usleep(100000);
     }
-    tcsetattr(0, TCSANOW, &told);
 }
