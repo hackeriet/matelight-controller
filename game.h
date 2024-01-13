@@ -63,6 +63,7 @@ struct game {
     void (*input_func)(int key_idx, bool key_val);
     void (*tick_func)();
     void (*render_func)(bool *display, char *screen);
+    bool (*idle_func)(void);
 };
 
 extern const char vga_palette[16 * 3];

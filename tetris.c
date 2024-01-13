@@ -629,6 +629,11 @@ static void render(bool *display, char *screen)
 
 }
 
+static bool idle(void)
+{
+    return game_mode != MODE_GAME;
+}
+
 const struct game tetris_game = {
     "tetris",
     0.1,
@@ -637,5 +642,6 @@ const struct game tetris_game = {
     deactivate,
     input,
     tick,
-    render
+    render,
+    idle,
 };

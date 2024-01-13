@@ -447,6 +447,11 @@ static void render(bool *display, char *screen)
     }
 }
 
+static bool idle(void)
+{
+    return game_mode != MODE_GAME;
+}
+
 const struct game snake_game = {
     "snake",
     0.1,
@@ -455,5 +460,6 @@ const struct game snake_game = {
     deactivate,
     input,
     tick,
-    render
+    render,
+    idle,
 };
