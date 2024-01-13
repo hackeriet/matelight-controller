@@ -49,8 +49,9 @@ static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
 
 static const struct game *games[] = {
     &snake_game,
+    &tetris_game,
 };
-static int cur_game = 0;
+static int cur_game = 1;
 
 static void handle_input(void)
 {

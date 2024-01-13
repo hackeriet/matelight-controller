@@ -1,5 +1,5 @@
 
-OBJS			= game.o snake.o
+OBJS			= game.o snake.o tetris.o
 
 TARGET			= game
 

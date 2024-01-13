@@ -30,6 +30,20 @@
 #define COLOR_GREY      7
 #define COLOR_WHITE     15
 
+// RGB
+#define COLOR_RGB(r, g, b)    (((r) << 16) | ((g) << 8) | (b))
+
+#define COLOR_RGB_BLACK       COLOR_RGB(0x00, 0x00, 0x00)
+#define COLOR_RGB_RED         COLOR_RGB(0xff, 0x00, 0x00)
+#define COLOR_RGB_GREEN       COLOR_RGB(0x00, 0xff, 0x00)
+#define COLOR_RGB_BLUE        COLOR_RGB(0x00, 0x00, 0xff)
+#define COLOR_RGB_YELLOW      COLOR_RGB(0xff, 0xff, 0x00)
+#define COLOR_RGB_MAGENTA     COLOR_RGB(0xff, 0x00, 0xff)
+#define COLOR_RGB_CYAN        COLOR_RGB(0x00, 0xff, 0xff)
+#define COLOR_RGB_WHITE       COLOR_RGB(0xff, 0xff, 0xff)
+#define COLOR_RGB_ORANGE      COLOR_RGB(0xff, 0x7f, 0x00)
+#define COLOR_RGB_PURPLE      COLOR_RGB(0x80, 0x00, 0x80)
+
 // Keys
 #define KEYPAD_NONE     0
 #define KEYPAD_LEFT     (1 << 0)
@@ -59,5 +73,6 @@ extern int ticks;
 extern int key_state;
 
 extern const struct game snake_game;
+extern const struct game tetris_game;
 
 #endif /* GAME_H */
