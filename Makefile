@@ -1,5 +1,5 @@
 
-OBJS			= game.o snake.o tetris.o
+OBJS			= game.o snake.o tetris.o mqtt.o
 
 TARGET			= game
 
@@ -22,6 +22,9 @@ endif
 CFLAGS			+= -pipe
 
 LDFLAGS			+= -lm
+
+CFLAGS			+= $(shell pkg-config libmosquitto --cflags)
+LDFLAGS			+= $(shell pkg-config libmosquitto --libs)
 
 all: $(TARGET)
 

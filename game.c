@@ -167,6 +167,8 @@ int main(int argc, char *argv[])
         fcntl(js_fd, F_SETFL, opt);
     }
 
+    mqtt_init();
+
     for (i = 0; i < ARRAY_LENGTH(games); i++) {
         if (games[i]->init_func) {
             games[i]->init_func();

@@ -75,4 +75,6 @@ extern int key_state;
 extern const struct game snake_game;
 extern const struct game tetris_game;
 
+void mqtt_init(void);
+
 #endif /* GAME_H */
