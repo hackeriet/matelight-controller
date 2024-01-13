@@ -1,7 +1,7 @@
 
-OBJS			= snake.o
+OBJS			= game.o
 
-TARGET			= snake
+TARGET			= game
 
 CC				= gcc
 LD				= gcc
