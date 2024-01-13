@@ -1,5 +1,5 @@
 
-OBJS			= game.o
+OBJS			= game.o snake.o
 
 TARGET			= game
 
