@@ -402,12 +402,12 @@ static void input(int key_idx, bool key_val)
                 move = MOVE_DOWN;
             }
 
-            if (key_idx == KEYPAD_START && key_val) {
-                game_pause = ! game_pause;
-            }
-            if (key_idx == KEYPAD_B && key_val) {
-                game_speed = ! game_speed;
-            }
+            //if (key_idx == KEYPAD_START && key_val) {
+            //    game_pause = ! game_pause;
+            //}
+            //if (key_idx == KEYPAD_B && key_val) {
+            //    game_speed = ! game_speed;
+            //}
             if (key_idx == KEYPAD_A && key_val) {
                 game_level = ! game_level;
                 setup_game(true);
