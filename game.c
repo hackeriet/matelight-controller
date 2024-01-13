@@ -51,7 +51,7 @@ static const struct game *games[] = {
     &snake_game,
     &tetris_game,
 };
-static int cur_game = 1;
+static int cur_game = 0;
 
 static void handle_input(void)
 {
@@ -122,6 +122,17 @@ static void handle_input(void)
             break;
         default:
             break;
+    }
+
+    if (key_idx == KEYPAD_SELECT && key_val) {
+        if (games[cur_game]->deactivate_func) {
+            games[cur_game]->deactivate_func();
+        }
+        cur_game++;
+        cur_game %= ARRAY_LENGTH(games);
+        if (games[cur_game]->activate_func) {
+            games[cur_game]->activate_func(true);
+        }
     }
 
     if (games[cur_game]->input_func) {
