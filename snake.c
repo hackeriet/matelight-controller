@@ -42,6 +42,7 @@
 static int game_mode = MODE_DEAD;
 static int game_pause = 0;
 static int game_speed = 0;
+static int game_level = 0;
 static int tick_count = 0;
 static int move = MOVE_NONE;
 static int diry;
@@ -140,6 +141,8 @@ static void rotate_objects(void)
 
 static void setup_game(bool start)
 {
+    int y, x;
+
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = 0;
     game_speed = 0;
@@ -154,6 +157,17 @@ static void setup_game(bool start)
     wantedlen = SNAKE_START;
     memset(grid, '\0', sizeof(grid));
     memset(snake, '\0', sizeof(snake));
+
+    if (game_level) {
+        for (x = 0; x < GRID_WIDTH; x++) {
+            grid[(0 * GRID_WIDTH) + x] = OBJ_WALL;
+            grid[((GRID_HEIGHT - 1) * GRID_WIDTH) + x] = OBJ_WALL;
+        }
+        for (y = 1; y < (GRID_HEIGHT - 1); y++) {
+            grid[(y * GRID_WIDTH) + 0] = OBJ_WALL;
+            grid[(y * GRID_WIDTH) + (GRID_WIDTH - 1)] = OBJ_WALL;
+        }
+    }
 
     add_object(OBJ_SNAKEHEAD);
 }
@@ -388,11 +402,15 @@ static void input(int key_idx, bool key_val)
                 move = MOVE_DOWN;
             }
 
-            if (key_idx == KEYPAD_SELECT && key_val) {
-                game_speed = ! game_speed;
-            }
             if (key_idx == KEYPAD_START && key_val) {
                 game_pause = ! game_pause;
+            }
+            if (key_idx == KEYPAD_B && key_val) {
+                game_speed = ! game_speed;
+            }
+            if (key_idx == KEYPAD_A && key_val) {
+                game_level = ! game_level;
+                setup_game(true);
             }
             break;
 
