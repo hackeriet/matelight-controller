@@ -22,13 +22,13 @@
 /* I, J, L, O, S, T, and Z */
 
 static const unsigned int tetris_block_colors[TETRIS_NUM_BRICKS] = {
-    /* I block */ COLOR_RGB_CYAN,
-    /* J block */ COLOR_RGB_BLUE,
-    /* L block */ COLOR_RGB_ORANGE,
-    /* O block */ COLOR_RGB_YELLOW,
-    /* S block */ COLOR_RGB_GREEN,
-    /* T block */ COLOR_RGB_PURPLE,
-    /* Z block */ COLOR_RGB_RED,
+    /* I block */ COLOR_CYAN,
+    /* J block */ COLOR_BLUE,
+    /* L block */ COLOR_ORANGE,
+    /* O block */ COLOR_YELLOW,
+    /* S block */ COLOR_GREEN,
+    /* T block */ COLOR_MAGENTA,
+    /* Z block */ COLOR_RED,
 };
 
 struct tetris_block_rotations {

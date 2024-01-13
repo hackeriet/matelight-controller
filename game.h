@@ -19,30 +19,29 @@
 // Display
 #define DISPLAY_TIMEOUT 1
 
-// mode 13h palette
-#define COLOR_BLACK     0
-#define COLOR_BLUE      1
-#define COLOR_GREEN     2
-#define COLOR_CYAN      3
-#define COLOR_RED       4
-#define COLOR_MAGENTA   5
-#define COLOR_ORANGE    6
-#define COLOR_GREY      7
-#define COLOR_WHITE     15
-
 // RGB
 #define COLOR_RGB(r, g, b)    (((r) << 16) | ((g) << 8) | (b))
 
-#define COLOR_RGB_BLACK       COLOR_RGB(0x00, 0x00, 0x00)
-#define COLOR_RGB_RED         COLOR_RGB(0xff, 0x00, 0x00)
-#define COLOR_RGB_GREEN       COLOR_RGB(0x00, 0xff, 0x00)
-#define COLOR_RGB_BLUE        COLOR_RGB(0x00, 0x00, 0xff)
-#define COLOR_RGB_YELLOW      COLOR_RGB(0xff, 0xff, 0x00)
-#define COLOR_RGB_MAGENTA     COLOR_RGB(0xff, 0x00, 0xff)
-#define COLOR_RGB_CYAN        COLOR_RGB(0x00, 0xff, 0xff)
-#define COLOR_RGB_WHITE       COLOR_RGB(0xff, 0xff, 0xff)
-#define COLOR_RGB_ORANGE      COLOR_RGB(0xff, 0x7f, 0x00)
-#define COLOR_RGB_PURPLE      COLOR_RGB(0x80, 0x00, 0x80)
+// 13h palette
+#define COLOR_BLACK             COLOR_RGB(0x00, 0x00, 0x00)
+#define COLOR_BLUE              COLOR_RGB(0x00, 0x00, 0x80)
+#define COLOR_GREEN             COLOR_RGB(0x00, 0x80, 0x00)
+#define COLOR_CYAN              COLOR_RGB(0x00, 0x80, 0x80)
+#define COLOR_RED               COLOR_RGB(0x80, 0x00, 0x00)
+#define COLOR_MAGENTA           COLOR_RGB(0x80, 0x00, 0x80)
+#define COLOR_BROWN             COLOR_RGB(0x80, 0x80, 0x00)
+#define COLOR_LIGHT_GRAY        COLOR_RGB(0xc0, 0xc0, 0xc0)
+#define COLOR_DARK_GRAY         COLOR_RGB(0x80, 0x80, 0x80)
+#define COLOR_LIGHT_BLUE        COLOR_RGB(0x00, 0x00, 0xff)
+#define COLOR_LIGHT_GREEN       COLOR_RGB(0x00, 0xff, 0x00)
+#define COLOR_LIGHT_CYAN        COLOR_RGB(0x00, 0xff, 0xff)
+#define COLOR_LIGHT_RED         COLOR_RGB(0xff, 0x00, 0x00)
+#define COLOR_LIGHT_MAGENTA     COLOR_RGB(0xff, 0x00, 0xff)
+#define COLOR_YELLOW            COLOR_RGB(0xff, 0xff, 0x00)
+#define COLOR_WHITE             COLOR_RGB(0xff, 0xff, 0xff)
+
+// Other colors
+#define COLOR_ORANGE            COLOR_RGB(0xff, 0x7f, 0x00)
 
 // Keys
 #define KEYPAD_NONE     0

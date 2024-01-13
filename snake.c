@@ -33,7 +33,7 @@
 
 #define COLOR_EMPTY     COLOR_BLACK
 #define COLOR_WALL      COLOR_WHITE
-#define COLOR_SNAKE     COLOR_GREY
+#define COLOR_SNAKE     COLOR_LIGHT_GRAY
 #define COLOR_SNAKEHEAD COLOR_ORANGE
 #define COLOR_FOOD      COLOR_GREEN
 #define COLOR_SUPERFOOD COLOR_MAGENTA
@@ -299,11 +299,11 @@ static void tick(void)
     }
 }
 
-static void draw_block(char *screen, int y, int x, unsigned char color, int fade)
+static void draw_block(char *screen, int y, int x, unsigned int color, int fade)
 {
-    unsigned char r = vga_palette[(color * 3) + 0];
-    unsigned char g = vga_palette[(color * 3) + 1];
-    unsigned char b = vga_palette[(color * 3) + 2];
+    unsigned char r = (color >> 16) & 0xff;
+    unsigned char g = (color >> 8) & 0xff;
+    unsigned char b = color & 0xff;
 
     if (fade) {
         int pos = (int)(time_val * 1000.0) % 1000;
@@ -322,7 +322,8 @@ static void draw_block(char *screen, int y, int x, unsigned char color, int fade
 
 static void draw_obj(char *screen, int y, int x)
 {
-    unsigned char type, color;
+    unsigned char type;
+    int color;
 
     type = grid[(y * GRID_WIDTH) + x];
     color = COLOR_EMPTY;
