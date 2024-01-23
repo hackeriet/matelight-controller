@@ -209,6 +209,7 @@ static void handle_announce_async(void)
 
 static void usage(void)
 {
+    fprintf(stderr, "Usage: game WLED-IP WLED-PORT JOYSTICK\n");
     exit(EXIT_FAILURE);
 }
 
