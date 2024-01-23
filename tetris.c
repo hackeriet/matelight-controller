@@ -626,7 +626,6 @@ static void render(bool *display, char *screen)
     } else {
         *display = false;
     }
-
 }
 
 static bool idle(void)
@@ -636,6 +635,7 @@ static bool idle(void)
 
 const struct game tetris_game = {
     "tetris",
+    true,
     0.1,
     NULL,
     activate,

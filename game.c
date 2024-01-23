@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <linux/joystick.h>
 
 #include "game.h"
@@ -28,10 +29,24 @@ static bool display = false;
 static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
 
 static const struct game *games[] = {
+    &announce_game,
     &snake_game,
     &tetris_game,
 };
 static int cur_game = 0;
+
+static const struct game *get_game(void)
+{
+    size_t i;
+
+    for (i = 0; i < ARRAY_LENGTH(games); i++) {
+        if (! games[i]->playable && ! games[i]->idle_func()) {
+            return games[i];
+        }
+    }
+
+    return games[cur_game];
+}
 
 static void handle_input(void)
 {
@@ -104,19 +119,21 @@ static void handle_input(void)
             break;
     }
 
-    if (key_idx == KEYPAD_SELECT && key_val) {
-        if (games[cur_game]->deactivate_func) {
-            games[cur_game]->deactivate_func();
+    if (key_idx == KEYPAD_SELECT && key_val && get_game()->playable) {
+        if (get_game()->deactivate_func) {
+            get_game()->deactivate_func();
         }
-        cur_game++;
-        cur_game %= ARRAY_LENGTH(games);
-        if (games[cur_game]->activate_func) {
-            games[cur_game]->activate_func(true);
+        do {
+            cur_game++;
+            cur_game %= ARRAY_LENGTH(games);
+        } while (! get_game()->playable);
+        if (get_game()->activate_func) {
+            get_game()->activate_func(true);
         }
     }
 
-    if (games[cur_game]->input_func) {
-        games[cur_game]->input_func(key_idx, key_val);
+    if (get_game()->input_func) {
+        get_game()->input_func(key_idx, key_val);
     }
 }
 
@@ -127,9 +144,18 @@ static double get_time_val(void)
     return (double)tv.tv_sec + ((double)tv.tv_usec / 1000000.0);
 }
 
+void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
+{
+    if (get_game()->idle_func()) {
+        if (announce_game.idle_func()) {
+            set_announce_text(text, color, bgcolor, rotate, speed);
+            announce_game.activate_func(true);
+        }
+    }
+}
+
 static void usage(void)
 {
-    fprintf(stderr, "Usage: game IP PORT JOYSTICK\n");
     exit(EXIT_FAILURE);
 }
 
@@ -141,6 +167,8 @@ int main(int argc, char *argv[])
     if (argc != 4) {
         usage();
     }
+
+    (void)setlocale(LC_ALL, "C.UTF-8");
 
     srand(time(NULL));
 
@@ -167,6 +195,7 @@ int main(int argc, char *argv[])
         fcntl(js_fd, F_SETFL, opt);
     }
 
+    ip_init();
     mqtt_init();
 
     for (i = 0; i < ARRAY_LENGTH(games); i++) {
@@ -179,29 +208,36 @@ int main(int argc, char *argv[])
     last_tick_val = 0.0;
     ticks = 0;
 
-    if (games[cur_game]->activate_func) {
-        games[cur_game]->activate_func(false);
+    while (! get_game()->playable) {
+        cur_game++;
+        cur_game %= ARRAY_LENGTH(games);
     }
+
+    if (get_game()->activate_func) {
+        get_game()->activate_func(false);
+    }
+
+    do_announce(ip_address, COLOR_BLUE, COLOR_BLACK, 1, 10.0);
 
     for (;;) {
         handle_input();
 
         time_val = get_time_val() - start_time_val;
-        if (games[cur_game]->tick_freq > 0.0 && games[cur_game]->tick_freq <= 1.0) {
-            while (time_val >= (last_tick_val + games[cur_game]->tick_freq)) {
-                last_tick_val += games[cur_game]->tick_freq;
+        if (get_game()->tick_freq > 0.0 && get_game()->tick_freq <= 1.0) {
+            while (time_val >= (last_tick_val + get_game()->tick_freq)) {
+                last_tick_val += get_game()->tick_freq;
                 ticks++;
-                if (games[cur_game]->tick_func) {
-                    games[cur_game]->tick_func();
+                if (get_game()->tick_func) {
+                    get_game()->tick_func();
                 }
             }
         }
 
         display = false;
-        if (games[cur_game]->render_func) {
+        if (get_game()->render_func) {
             udp_data[0] = WLED_DRGB;
             udp_data[1] = DISPLAY_TIMEOUT;
-            games[cur_game]->render_func(&display, udp_data + 2);
+            get_game()->render_func(&display, udp_data + 2);
         }
         if (display) {
             (void)sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));

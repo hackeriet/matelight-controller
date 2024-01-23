@@ -1,5 +1,5 @@
 
-OBJS			= game.o snake.o tetris.o mqtt.o
+OBJS			= game.o ip.o mqtt.o announce.o snake.o tetris.o
 
 TARGET			= game
 

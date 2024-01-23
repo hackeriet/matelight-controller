@@ -3,8 +3,12 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <netinet/in.h>
 
 #define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
+
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 // Grid
 #define GRID_WIDTH      10
@@ -43,6 +47,18 @@
 // Other colors
 #define COLOR_ORANGE            COLOR_RGB(0xff, 0x7f, 0x00)
 
+// Set pixel
+static inline void set_pixel(char *screen, int y, int x, unsigned int color)
+{
+    unsigned char r = (color >> 16) & 0xff;
+    unsigned char g = (color >> 8) & 0xff;
+    unsigned char b = color & 0xff;
+
+    screen[(((y * GRID_WIDTH) + x)*3) + 0] = r;
+    screen[(((y * GRID_WIDTH) + x)*3) + 1] = g;
+    screen[(((y * GRID_WIDTH) + x)*3) + 2] = b;
+}
+
 // Keys
 #define KEYPAD_NONE     0
 #define KEYPAD_LEFT     (1 << 0)
@@ -56,6 +72,7 @@
 
 struct game {
     const char *name;
+    bool playable;
     double tick_freq;
     void (*init_func)(void);
     void (*activate_func)(bool start);
@@ -66,15 +83,20 @@ struct game {
     bool (*idle_func)(void);
 };
 
-extern const char vga_palette[16 * 3];
-
 extern double time_val;
 extern int ticks;
 extern int key_state;
 
+extern void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+
+extern const struct game announce_game;
+void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+
 extern const struct game snake_game;
 extern const struct game tetris_game;
 
+extern char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
+void ip_init(void);
 void mqtt_init(void);
 
 #endif /* GAME_H */
