@@ -329,9 +329,7 @@ static void draw_block(char *screen, int y, int x, unsigned int color, int fade)
         b = ((int)b*pos) / 1000;
     }
 
-    screen[(((y * GRID_WIDTH) + x)*3) + 0] = r;
-    screen[(((y * GRID_WIDTH) + x)*3) + 1] = g;
-    screen[(((y * GRID_WIDTH) + x)*3) + 2] = b;
+    set_pixel(screen, y, x, COLOR_RGB(r, g, b));
 }
 
 static void draw_obj(char *screen, int y, int x)

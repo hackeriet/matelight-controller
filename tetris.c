@@ -526,17 +526,6 @@ static bool doit(void)
     return ! is_game_over;
 }
 
-static void draw_box(char *screen, int y, int x, unsigned int color)
-{
-    unsigned char r = (color >> 16) & 0xff;
-    unsigned char g = (color >> 8) & 0xff;
-    unsigned char b = color & 0xff;
-
-    screen[(((y * GRID_WIDTH) + x)*3) + 0] = r;
-    screen[(((y * GRID_WIDTH) + x)*3) + 1] = g;
-    screen[(((y * GRID_WIDTH) + x)*3) + 2] = b;
-}
-
 static void draw(char *screen)
 {
     int x, y;
@@ -544,7 +533,11 @@ static void draw(char *screen)
     tetris_field field = { { 0 } };
     tetris_field curblock = { { 0 } };
 
-    memset(screen, '\0', GRID_WIDTH * GRID_HEIGHT * 3);
+    for (y = 0; y < GRID_HEIGHT; y++) {
+        for (x = 0; x < GRID_WIDTH; x++) {
+            set_pixel(screen, y, x, COLOR_BLACK);
+        }
+    }
 
     write_block(curblock, tetris->curblock, tetris->rotation, tetris->curblock_x, tetris->curblock_y);
     memcpy(field, tetris->field, sizeof(field));
@@ -559,7 +552,7 @@ static void draw(char *screen)
             v = field[x][y];
             if (v) {
                 color = tetris_block_colors[v - 1];
-                draw_box(screen, (GRID_HEIGHT - y) - 1, x, color);
+                set_pixel(screen, (GRID_HEIGHT - y) - 1, x, color);
             }
         }
     }
