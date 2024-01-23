@@ -1,0 +1,14 @@
+[Unit]
+Description=Snake
+After=network.target dev-input-js0.device
+StartLimitIntervalSec=400
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=/home/haxx/snake/game 10.10.3.105 21324 /dev/input/js0
+Restart=always
+RestartSec=90
+
+[Install]
+WantedBy=multi-user.target
