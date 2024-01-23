@@ -70,6 +70,35 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
     }
 }
 
+static void strip_garbage(char *text)
+{
+    char *garbage = NULL, *s;
+    size_t len;
+
+    if (! text || !*text)
+        return;
+
+    len = strlen(text);
+    if (len <= 0 || text[len - 1] != '>')
+        return;
+
+    for (;;) {
+        if (garbage) {
+            s = strstr(garbage + 2, " <");
+        } else {
+            s = strstr(text, " <");
+        }
+        if (s) {
+            garbage = s;
+        } else {
+            break;
+        }
+    }
+
+    if (garbage)
+        *garbage = '\0';
+}
+
 static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
     char *text;
@@ -83,6 +112,7 @@ static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto
         if (text) {
             memcpy(text, msg->payload, msg->payloadlen);
             text[msg->payloadlen] = '\0';
+            strip_garbage(text);
             do_announce_async(text, COLOR_BLACK, COLOR_YELLOW, 1, 5.0);
         }
     }
