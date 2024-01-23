@@ -7,8 +7,8 @@ CC				= gcc
 LD				= gcc
 
 CFLAGS			= -Wall -W -Wextra
-LDFLAGS			=
-CFLAGS			+= --std=gnu99
+LDFLAGS			= -pthread
+CFLAGS			+= --std=gnu99 -pthread
 
 ifdef RELEASE
 CFLAGS			+= -O2 -fomit-frame-pointer

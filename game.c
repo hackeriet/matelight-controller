@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <linux/joystick.h>
+#include <pthread.h>
 
 #include "game.h"
 
@@ -34,6 +35,14 @@ static const struct game *games[] = {
     &tetris_game,
 };
 static int cur_game = 0;
+
+static pthread_mutex_t async_announce_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool async_announce = false;
+static char *async_announce_text = NULL;
+static unsigned int async_announce_color = COLOR_WHITE;
+static unsigned int async_announce_bgcolor = COLOR_BLACK;
+static int async_announce_rotate = 1;
+static double async_announce_speed = 5.0;
 
 static const struct game *get_game(void)
 {
@@ -154,6 +163,50 @@ void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int
     }
 }
 
+void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
+{
+    if (pthread_mutex_lock(&async_announce_mutex) != 0)
+        return;
+
+    if (async_announce) {
+        (void)pthread_mutex_unlock(&async_announce_mutex);
+        return;
+    }
+
+    async_announce = true;
+    async_announce_text = text;
+    async_announce_color = color;
+    async_announce_bgcolor = bgcolor;
+    async_announce_rotate = rotate;
+    async_announce_speed = speed;
+
+    (void)pthread_mutex_unlock(&async_announce_mutex);
+}
+
+static void handle_announce_async(void)
+{
+    if (pthread_mutex_lock(&async_announce_mutex) != 0)
+        return;
+
+    if (! async_announce) {
+        (void)pthread_mutex_unlock(&async_announce_mutex);
+        return;
+    }
+
+    do_announce(async_announce_text, async_announce_color, async_announce_bgcolor, async_announce_rotate, async_announce_speed);
+
+    async_announce = false;
+    if (async_announce_text)
+        free(async_announce_text);
+    async_announce_text = NULL;
+    async_announce_color = COLOR_WHITE;
+    async_announce_bgcolor = COLOR_BLACK;
+    async_announce_rotate = 1;
+    async_announce_speed = 5.0;
+
+    (void)pthread_mutex_unlock(&async_announce_mutex);
+}
+
 static void usage(void)
 {
     exit(EXIT_FAILURE);
@@ -221,6 +274,7 @@ int main(int argc, char *argv[])
 
     for (;;) {
         handle_input();
+        handle_announce_async();
 
         time_val = get_time_val() - start_time_val;
         if (get_game()->tick_freq > 0.0 && get_game()->tick_freq <= 1.0) {

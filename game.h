@@ -88,6 +88,7 @@ extern int ticks;
 extern int key_state;
 
 extern void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+extern void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
 
 extern const struct game announce_game;
 void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);

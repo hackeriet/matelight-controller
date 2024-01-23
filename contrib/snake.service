@@ -6,6 +6,11 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
+Environment="MQTT_SERVER=matrix.hackeriet.no"
+Environment="MQTT_TLS=1"
+Environment="MQTT_PORT=8883"
+Environment="MQTT_USERNAME=environment_readonly"
+Environment="MQTT_PASSWORD=xxx"
 ExecStart=/home/haxx/snake/game 10.10.3.105 21324 /dev/input/js0
 Restart=always
 RestartSec=90
