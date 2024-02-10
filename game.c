@@ -137,7 +137,7 @@ static void handle_input(void)
             cur_game %= ARRAY_LENGTH(games);
         } while (! get_game()->playable);
         if (get_game()->activate_func) {
-            printf("starting game: %s\n", get_game()->name);
+            fprintf(stderr, "starting game: %s\n", get_game()->name);
             get_game()->activate_func(true);
         }
     }
@@ -158,14 +158,14 @@ void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int
 {
     if (get_game()->idle_func()) {
         if (announce_game.idle_func()) {
-            printf("announcing text: %s\n", text);
+            fprintf(stderr, "announcing text: %s\n", text);
             set_announce_text(text, color, bgcolor, rotate, speed);
             announce_game.activate_func(true);
         } else {
-            printf("not announcing text (announce already in progress): %s\n", text);
+            fprintf(stderr, "not announcing text (announce already in progress): %s\n", text);
         }
     } else {
-        printf("not announcing text (game is active): %s\n", text);
+        fprintf(stderr, "not announcing text (game is active): %s\n", text);
     }
 }
 
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
         usage();
     }
 
-    printf("starting game controller\n");
+    fprintf(stderr, "starting game controller\n");
 
     (void)setlocale(LC_ALL, "C.UTF-8");
 
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
     }
 
     ip_init();
-    printf("my IP-address is: %s\n", ip_address);
+    fprintf(stderr, "my IP-address is: %s\n", ip_address);
     mqtt_init();
 
     for (i = 0; i < ARRAY_LENGTH(games); i++) {

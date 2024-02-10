@@ -26,7 +26,7 @@ static void on_log(struct mosquitto *mosq, void *obj, int level, const char *str
     (void)mosq;
     (void)obj;
 
-    printf("mqtt: on_log: %d: %s\n", level, str);
+    fprintf(stderr, "mqtt: on_log: %d: %s\n", level, str);
 }
 
 static void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
@@ -35,7 +35,7 @@ static void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 
     (void)obj;
 
-    printf("mqtt: on_connect: %s\n", mosquitto_connack_string(reason_code));
+    fprintf(stderr, "mqtt: on_connect: %s\n", mosquitto_connack_string(reason_code));
     if (reason_code != 0) {
         //mosquitto_disconnect(mosq);
         return;
@@ -58,7 +58,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
     (void)mid;
 
     for (i = 0; i < qos_count; i++) {
-        printf("mqtt: on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+        fprintf(stderr, "mqtt: on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
         if (granted_qos[i] <= 2){
             have_subscription = true;
         }
@@ -105,7 +105,7 @@ static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto
     (void)mosq;
     (void)obj;
 
-    printf("mqtt: on_message: %s %d %d:%.*s\n", msg->topic, msg->qos, msg->payloadlen, msg->payloadlen, (char *)msg->payload);
+    fprintf(stderr, "mqtt: on_message: %s %d %d:%.*s\n", msg->topic, msg->qos, msg->payloadlen, msg->payloadlen, (char *)msg->payload);
 
     if (msg->topic && strcmp(msg->topic, MQTT_TOPIC) == 0 && msg->payloadlen > 0) {
         text = malloc(msg->payloadlen + 1);
