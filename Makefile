@@ -1,5 +1,5 @@
 
-OBJS			= game.o ip.o mqtt.o announce.o snake.o tetris.o
+OBJS			= game.o ip.o mdns.o wledapi.o mqtt.o announce.o snake.o tetris.o
 
 TARGET			= game
 
@@ -22,6 +22,12 @@ endif
 CFLAGS			+= -pipe
 
 LDFLAGS			+= -lm
+
+CFLAGS			+= $(shell pkg-config avahi-client --cflags)
+LDFLAGS			+= $(shell pkg-config avahi-client --libs)
+
+CFLAGS			+= $(shell pkg-config libcurl --cflags)
+LDFLAGS			+= $(shell pkg-config libcurl --libs)
 
 CFLAGS			+= $(shell pkg-config libmosquitto --cflags)
 LDFLAGS			+= $(shell pkg-config libmosquitto --libs)

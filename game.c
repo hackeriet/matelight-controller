@@ -16,7 +16,9 @@
 
 #include "game.h"
 
-static struct sockaddr_in udp_sockaddr = { 0 };
+int wled_port = 21324;
+static struct sockaddr_storage udp_sockaddr = { 0 };
+const char *wled_ds = NULL;
 static int udp_fd = -1;
 static int js_fd = -1;
 
@@ -36,7 +38,7 @@ static const struct game *games[] = {
 };
 static int cur_game = 0;
 
-static pthread_mutex_t async_announce_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool async_announce = false;
 static char *async_announce_text = NULL;
 static unsigned int async_announce_color = COLOR_WHITE;
@@ -169,13 +171,35 @@ void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int
     }
 }
 
+void do_announce_my_ip(void)
+{
+    char wled_ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
+    char text[100 + MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN) + MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
+
+    if (udp_sockaddr.ss_family == AF_UNSPEC)
+        return;
+
+    if (udp_sockaddr.ss_family == AF_INET) {
+        if (! inet_ntop(AF_INET, &((struct sockaddr_in *)&udp_sockaddr)->sin_addr, wled_ip_address, sizeof(wled_ip_address)))
+            return;
+    } else if (udp_sockaddr.ss_family == AF_INET6) {
+        if (! inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, wled_ip_address, sizeof(wled_ip_address)))
+            return;
+    } else {
+        return;
+    }
+
+    snprintf(text, sizeof(text), "RPI: %s, WLED: %s", ip_address, wled_ip_address);
+    do_announce(text, COLOR_BLUE, COLOR_BLACK, 1, 10.0);
+}
+
 void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
 {
-    if (pthread_mutex_lock(&async_announce_mutex) != 0)
+    if (pthread_mutex_lock(&mutex) != 0)
         return;
 
     if (async_announce) {
-        (void)pthread_mutex_unlock(&async_announce_mutex);
+        (void)pthread_mutex_unlock(&mutex);
         return;
     }
 
@@ -186,16 +210,16 @@ void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int
     async_announce_rotate = rotate;
     async_announce_speed = speed;
 
-    (void)pthread_mutex_unlock(&async_announce_mutex);
+    (void)pthread_mutex_unlock(&mutex);
 }
 
 static void handle_announce_async(void)
 {
-    if (pthread_mutex_lock(&async_announce_mutex) != 0)
+    if (pthread_mutex_lock(&mutex) != 0)
         return;
 
     if (! async_announce) {
-        (void)pthread_mutex_unlock(&async_announce_mutex);
+        (void)pthread_mutex_unlock(&mutex);
         return;
     }
 
@@ -210,7 +234,57 @@ static void handle_announce_async(void)
     async_announce_rotate = 1;
     async_announce_speed = 5.0;
 
-    (void)pthread_mutex_unlock(&async_announce_mutex);
+    (void)pthread_mutex_unlock(&mutex);
+}
+
+void update_wled_ip(const char *address)
+{
+    int af = AF_UNSPEC;
+    struct in_addr addr;
+    struct in6_addr addr6;
+    bool update = false;
+
+    if (inet_pton(AF_INET, address, &addr)) {
+        af = AF_INET;
+    } else if (inet_pton(AF_INET6, address, &addr6)) {
+        af = AF_INET6;
+    }
+
+    if (af == AF_INET || af == AF_INET6) {
+        if (pthread_mutex_lock(&mutex) != 0)
+            return;
+
+        if (af != udp_sockaddr.ss_family) {
+            if (af == AF_INET) {
+                udp_sockaddr.ss_family = AF_INET;
+                ((struct sockaddr_in *)&udp_sockaddr)->sin_addr = addr;
+                ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+            } else if (af == AF_INET6) {
+                udp_sockaddr.ss_family = AF_INET6;
+                ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr = addr6;
+                ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+            }
+            update = true;
+        } else if (af == AF_INET && memcmp(&addr, &((struct sockaddr_in *)&udp_sockaddr)->sin_addr, sizeof(addr))) {
+            udp_sockaddr.ss_family = AF_INET;
+            memcpy(&((struct sockaddr_in *)&udp_sockaddr)->sin_addr, &addr, sizeof(addr));
+            ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+            update = true;
+        } else if (af == AF_INET6 && memcmp(&addr6, &((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, sizeof(addr6))) {
+            udp_sockaddr.ss_family = AF_INET6;
+            memcpy(&((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, &addr6, sizeof(addr6));
+            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+            update = true;
+        }
+
+        if (update) {
+            fprintf(stderr, "using wled controller from mdns: %s\n", address);
+            do_announce_my_ip();
+        }
+
+        (void)pthread_mutex_unlock(&mutex);
+        return;
+    }
 }
 
 static void usage(void)
@@ -234,10 +308,17 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
+    wled_port = htons(atoi(argv[2]));
+
     memset(&udp_sockaddr, '\0', sizeof(udp_sockaddr));
-    udp_sockaddr.sin_family = AF_INET;
-    udp_sockaddr.sin_port = htons(atoi(argv[2]));
-    udp_sockaddr.sin_addr.s_addr = inet_addr(argv[1]);
+    udp_sockaddr.ss_family = AF_UNSPEC;
+    if (strncmp(argv[1], "mdns:", 5) == 0) {
+        wled_ds = argv[1] + 5;
+    } else {
+        udp_sockaddr.ss_family = AF_INET;
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_addr.s_addr = inet_addr(argv[1]);
+    }
 
     udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_fd == -1) {
@@ -259,6 +340,9 @@ int main(int argc, char *argv[])
 
     ip_init();
     fprintf(stderr, "my IP-address is: %s\n", ip_address);
+    if (wled_ds) {
+        mdns_init();
+    }
     mqtt_init();
 
     for (i = 0; i < ARRAY_LENGTH(games); i++) {
@@ -280,7 +364,7 @@ int main(int argc, char *argv[])
         get_game()->activate_func(false);
     }
 
-    do_announce(ip_address, COLOR_BLUE, COLOR_BLACK, 1, 10.0);
+    do_announce_my_ip();
 
     for (;;) {
         handle_input();
@@ -304,7 +388,9 @@ int main(int argc, char *argv[])
             get_game()->render_func(&display, udp_data + 2);
         }
         if (display) {
-            (void)sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
+            if (udp_sockaddr.ss_family != AF_UNSPEC) {
+                (void)sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
+            }
         }
 
         usleep(100000);

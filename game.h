@@ -87,17 +87,22 @@ extern double time_val;
 extern int ticks;
 extern int key_state;
 
+extern const char *wled_ds;
+extern void update_wled_ip(const char *address);
+
 extern void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
 extern void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
 
 extern const struct game announce_game;
-void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+extern void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
 
 extern const struct game snake_game;
 extern const struct game tetris_game;
 
 extern char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
-void ip_init(void);
-void mqtt_init(void);
+extern void ip_init(void);
+extern void mdns_init(void);
+extern void mqtt_init(void);
+extern bool wled_api_check(const char *addr);
 
 #endif /* GAME_H */
