@@ -13,6 +13,7 @@ Games implemented:
 ------------------
 - Snake
 - Tetris (Original implementation: https://github.com/mamikk/tetris )
+- Flappy bird
 
 Input:
 ------

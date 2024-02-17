@@ -98,6 +98,7 @@ extern void set_announce_text(const char *text, unsigned int color, unsigned int
 
 extern const struct game snake_game;
 extern const struct game tetris_game;
+extern const struct game flappy_game;
 
 extern char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
 extern void ip_init(void);
