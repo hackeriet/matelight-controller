@@ -1,5 +1,5 @@
 [Unit]
-Description=Snake
+Description=Matelight
 After=network.target dev-input-js0.device
 StartLimitIntervalSec=400
 StartLimitBurst=3
@@ -11,7 +11,7 @@ Environment="MQTT_TLS=1"
 Environment="MQTT_PORT=8883"
 Environment="MQTT_USERNAME=environment_readonly"
 Environment="MQTT_PASSWORD=xxx"
-ExecStart=/home/haxx/snake/game mdns:Matelight 21324 /dev/input/js0
+ExecStart=/usr/local/bin/matelight mdns:Matelight 21324 /dev/input/js0
 Restart=always
 RestartSec=90
 

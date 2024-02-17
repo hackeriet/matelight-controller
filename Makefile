@@ -1,7 +1,7 @@
 
-OBJS			= game.o ip.o mdns.o wledapi.o mqtt.o announce.o snake.o tetris.o
+OBJS			= main.o ip.o mdns.o wledapi.o mqtt.o announce.o snake.o tetris.o
 
-TARGET			= game
+TARGET			= matelight
 
 CC				= gcc
 LD				= gcc
@@ -43,4 +43,7 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: all clean
+install:
+	install -m 755 $(TARGET) /usr/local/bin/
+
+.PHONY: all clean install
