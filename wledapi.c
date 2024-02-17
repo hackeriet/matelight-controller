@@ -59,6 +59,9 @@ bool wled_xml_check(struct MemoryStruct *chunk)
         return false;
     s += strlen(wled_ds);
 
+    if (strncmp(s, " (live)", 7) == 0)
+        s += 7;
+
     if (strncmp(s, "</ds>", 5) != 0)
         return false;
 
@@ -82,6 +85,8 @@ bool wled_api_check(const char *addr)
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_memory_callback);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10);
+    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 0L);
+    curl_easy_setopt(curl_handle, CURLOPT_MAXFILESIZE_LARGE, (off_t)(1024L*1024L));
 
     res = curl_easy_perform(curl_handle);
 
