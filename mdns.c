@@ -15,7 +15,7 @@
 
 #include "game.h"
 
-struct http_server {
+struct wled_server {
     char address[AVAHI_ADDRESS_STR_MAX];
     bool is_wled;
 };
@@ -26,13 +26,13 @@ static AvahiClient *client = NULL;
 static AvahiServiceBrowser *sb = NULL;
 static bool all_for_now = false;
 static size_t n_resolvers = 0;
-static struct http_server *http_servers = NULL;
-static size_t num_http_servers = 0;
+static struct wled_server *wled_servers = NULL;
+static size_t num_wled_servers = 0;
 
 static void resolve_callback(AvahiServiceResolver *r, AvahiIfIndex interface, AvahiProtocol protocol, AvahiResolverEvent event, const char *name, const char *type, const char *domain, const char *host_name, const AvahiAddress *address, uint16_t port, AvahiStringList *txt, AvahiLookupResultFlags flags, void* userdata) {
     char a[AVAHI_ADDRESS_STR_MAX];
     char *t;
-    struct http_server *new_http_servers;
+    struct wled_server *new_wled_servers;
 
     (void)interface;
     (void)protocol;
@@ -62,16 +62,16 @@ static void resolve_callback(AvahiServiceResolver *r, AvahiIfIndex interface, Av
                         !!(flags & AVAHI_LOOKUP_RESULT_CACHED));
                 avahi_free(t);
             }
-            if (http_servers) {
-                new_http_servers = realloc(http_servers, sizeof(struct http_server) * (num_http_servers + 1));
+            if (wled_servers) {
+                new_wled_servers = realloc(wled_servers, sizeof(struct wled_server) * (num_wled_servers + 1));
             } else {
-                new_http_servers = malloc(sizeof(struct http_server));
+                new_wled_servers = malloc(sizeof(struct wled_server));
             }
-            if (new_http_servers) {
-                memcpy(&new_http_servers[num_http_servers].address, a, sizeof(a));
-                new_http_servers[num_http_servers].is_wled = false;
-                http_servers = new_http_servers;
-                num_http_servers++;
+            if (new_wled_servers) {
+                memcpy(&new_wled_servers[num_wled_servers].address, a, sizeof(a));
+                new_wled_servers[num_wled_servers].is_wled = false;
+                wled_servers = new_wled_servers;
+                num_wled_servers++;
             }
         }
     }
@@ -156,7 +156,7 @@ static void *mdns_thread_func(void *arg)
             return NULL;
         }
 
-        sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_http._tcp", NULL, 0, browse_callback, client);
+        sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_wled._tcp", NULL, 0, browse_callback, client);
         if (! sb) {
             fprintf(stderr, "mdns: Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(client)));
             avahi_client_free(client);
@@ -170,24 +170,24 @@ static void *mdns_thread_func(void *arg)
         avahi_client_free(client);
         avahi_simple_poll_free(simple_poll);
 
-        for (i = 0; i < num_http_servers; i++) {
-            if (wled_api_check(http_servers[i].address)) {
-                http_servers[i].is_wled = true;
+        for (i = 0; i < num_wled_servers; i++) {
+            if (wled_api_check(wled_servers[i].address)) {
+                wled_servers[i].is_wled = true;
             }
         }
 
-        for (i = 0; i < num_http_servers; i++) {
-            if (http_servers[i].is_wled) {
-                update_wled_ip(http_servers[i].address);
+        for (i = 0; i < num_wled_servers; i++) {
+            if (wled_servers[i].is_wled) {
+                update_wled_ip(wled_servers[i].address);
                 break;
             }
         }
 
-        if (http_servers) {
-            free(http_servers);
+        if (wled_servers) {
+            free(wled_servers);
         }
-        http_servers = NULL;
-        num_http_servers = 0;
+        wled_servers = NULL;
+        num_wled_servers = 0;
 
         sleep(60);
     }
