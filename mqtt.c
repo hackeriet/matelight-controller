@@ -7,7 +7,7 @@
 
 #include <mosquitto.h>
 
-#include "game.h"
+#include "matelight.h"
 
 #define MQTT_TOPIC "hackeriet/ding"
 #define CA_CERTIFICATES "/etc/ssl/certs/ca-certificates.crt"

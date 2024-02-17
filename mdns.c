@@ -13,7 +13,7 @@
 #include <avahi-common/malloc.h>
 #include <avahi-common/error.h>
 
-#include "game.h"
+#include "matelight.h"
 
 struct wled_server {
     char address[AVAHI_ADDRESS_STR_MAX];

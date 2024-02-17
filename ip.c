@@ -7,7 +7,7 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 
-#include "game.h"
+#include "matelight.h"
 
 char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
 

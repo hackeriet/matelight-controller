@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game.h"
+#include "matelight.h"
 
 
 #include <curl/curl.h>

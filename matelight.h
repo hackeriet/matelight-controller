@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef MATELIGHT_H
+#define MATELIGHT_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -105,4 +105,4 @@ extern void mdns_init(void);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);
 
-#endif /* GAME_H */
+#endif /* MATELIGHT_H */

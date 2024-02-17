@@ -5,7 +5,7 @@
 #include <string.h>
 #include <wchar.h>
 
-#include "game.h"
+#include "matelight.h"
 
 #include "font8x8/font8x8.h"
 

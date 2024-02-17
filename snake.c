@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game.h"
+#include "matelight.h"
 
 #define MODE_GAME       0
 #define MODE_DEAD       1

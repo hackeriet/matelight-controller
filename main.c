@@ -14,7 +14,7 @@
 #include <linux/joystick.h>
 #include <pthread.h>
 
-#include "game.h"
+#include "matelight.h"
 
 int wled_port = 21324;
 static struct sockaddr_storage udp_sockaddr = { 0 };
