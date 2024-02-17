@@ -12,7 +12,7 @@ for input.
 Games implemented:
 ------------------
 - Snake
-- Tetris
+- Tetris (Original implementation: https://github.com/mamikk/tetris )
 
 Input:
 ------
