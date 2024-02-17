@@ -18,6 +18,7 @@
 
 int wled_port = 21324;
 static struct sockaddr_storage udp_sockaddr = { 0 };
+static char wled_ip_new[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
 const char *wled_ds = NULL;
 static int udp_fd = -1;
 static int js_fd = -1;
@@ -239,52 +240,69 @@ static void handle_announce_async(void)
 
 void update_wled_ip(const char *address)
 {
+    if (pthread_mutex_lock(&mutex) != 0)
+        return;
+
+    strncpy(wled_ip_new, address, sizeof(wled_ip_new));
+
+    (void)pthread_mutex_unlock(&mutex);
+}
+
+static void handle_wled_ip_async(void)
+{
     int af = AF_UNSPEC;
     struct in_addr addr;
     struct in6_addr addr6;
     bool update = false;
 
-    if (inet_pton(AF_INET, address, &addr)) {
-        af = AF_INET;
-    } else if (inet_pton(AF_INET6, address, &addr6)) {
-        af = AF_INET6;
-    }
+    if (pthread_mutex_lock(&mutex) != 0)
+        return;
 
-    if (af == AF_INET || af == AF_INET6) {
-        if (pthread_mutex_lock(&mutex) != 0)
-            return;
-
-        if (af != udp_sockaddr.ss_family) {
-            if (af == AF_INET) {
-                udp_sockaddr.ss_family = AF_INET;
-                ((struct sockaddr_in *)&udp_sockaddr)->sin_addr = addr;
-                ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
-            } else if (af == AF_INET6) {
-                udp_sockaddr.ss_family = AF_INET6;
-                ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr = addr6;
-                ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
-            }
-            update = true;
-        } else if (af == AF_INET && memcmp(&addr, &((struct sockaddr_in *)&udp_sockaddr)->sin_addr, sizeof(addr))) {
-            udp_sockaddr.ss_family = AF_INET;
-            memcpy(&((struct sockaddr_in *)&udp_sockaddr)->sin_addr, &addr, sizeof(addr));
-            ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
-            update = true;
-        } else if (af == AF_INET6 && memcmp(&addr6, &((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, sizeof(addr6))) {
-            udp_sockaddr.ss_family = AF_INET6;
-            memcpy(&((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, &addr6, sizeof(addr6));
-            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
-            update = true;
-        }
-
-        if (update) {
-            fprintf(stderr, "using wled controller from mdns: %s\n", address);
-            do_announce_my_ip();
-        }
-
+    if (! *wled_ip_new) {
         (void)pthread_mutex_unlock(&mutex);
         return;
     }
+
+    if (inet_pton(AF_INET, wled_ip_new, &addr)) {
+        af = AF_INET;
+    } else if (inet_pton(AF_INET6, wled_ip_new, &addr6)) {
+        af = AF_INET6;
+    } else {
+        *wled_ip_new = '\0';
+        (void)pthread_mutex_unlock(&mutex);
+        return;
+    }
+
+    if (af != udp_sockaddr.ss_family) {
+        if (af == AF_INET) {
+            udp_sockaddr.ss_family = AF_INET;
+            ((struct sockaddr_in *)&udp_sockaddr)->sin_addr = addr;
+            ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+        } else if (af == AF_INET6) {
+            udp_sockaddr.ss_family = AF_INET6;
+            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr = addr6;
+            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+        }
+        update = true;
+    } else if (af == AF_INET && memcmp(&addr, &((struct sockaddr_in *)&udp_sockaddr)->sin_addr, sizeof(addr))) {
+        udp_sockaddr.ss_family = AF_INET;
+        memcpy(&((struct sockaddr_in *)&udp_sockaddr)->sin_addr, &addr, sizeof(addr));
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+        update = true;
+    } else if (af == AF_INET6 && memcmp(&addr6, &((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, sizeof(addr6))) {
+        udp_sockaddr.ss_family = AF_INET6;
+        memcpy(&((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, &addr6, sizeof(addr6));
+        ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+        update = true;
+    }
+
+    if (update) {
+        fprintf(stderr, "using wled controller from mdns: %s\n", wled_ip_new);
+        do_announce_my_ip();
+    }
+
+    *wled_ip_new = '\0';
+    (void)pthread_mutex_unlock(&mutex);
 }
 
 static void usage(void)
@@ -369,6 +387,7 @@ int main(int argc, char *argv[])
     for (;;) {
         handle_input();
         handle_announce_async();
+        handle_wled_ip_async();
 
         time_val = get_time_val() - start_time_val;
         if (get_game()->tick_freq > 0.0 && get_game()->tick_freq <= 1.0) {
