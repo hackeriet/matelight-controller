@@ -26,7 +26,20 @@ Build:
 Requirements: libavahi-client, libcurl, libmosquitto.
 ```
 make
+```
+
+Run:
+----
+```
 ./matelight mdns:Matelight 21324 /dev/input/js0
+```
+
+Run locally with simulator:
+---------------------------
+```
+mkfifo /tmp/js0.fifo
+./contrib/matelight-simulator.py --address=127.0.0.1 --port=21324 --fifo=/tmp/js0.fifo &
+./matelight 127.0.0.1 21324 /tmp/js0.fifo
 ```
 
 TODO:
