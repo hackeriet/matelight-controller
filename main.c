@@ -37,6 +37,7 @@ static const struct game *games[] = {
     &snake_game,
     &tetris_game,
     &flappy_game,
+    &pong_game,
 };
 static int cur_game = 0;
 
