@@ -32,7 +32,7 @@ make
 Run:
 ----
 ```
-./matelight mdns:Matelight 21324 /dev/input/js0
+./matelight --mdns-description=Matelight --port=21324 --joystick-device=/dev/input/js0
 ```
 
 Run locally with simulator:
@@ -40,7 +40,7 @@ Run locally with simulator:
 ```
 mkfifo /tmp/js0.fifo
 ./contrib/matelight-simulator.py --address=127.0.0.1 --port=21324 --fifo=/tmp/js0.fifo &
-./matelight 127.0.0.1 21324 /tmp/js0.fifo
+./matelight --address=127.0.0.1 --port=21324 --joystick-device=/tmp/js0.fifo
 ```
 
 TODO:

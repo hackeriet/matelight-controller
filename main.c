@@ -11,12 +11,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <getopt.h>
 #include <linux/joystick.h>
 #include <pthread.h>
 
 #include "matelight.h"
 
-int wled_port = 21324;
+static char *address = NULL;
+static int wled_port = 21324;
+static char *mdns_description = NULL;
+static char *joypad_dev = "/dev/input/js0";
+static int start_game = -1;
+static bool start_on_startup = false;
+static bool mqtt = false;
+
 static struct sockaddr_storage udp_sockaddr = { 0 };
 static char wled_ip_new[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
 const char *wled_ds = NULL;
@@ -67,6 +75,9 @@ static void handle_input(void)
     struct js_event event;
     int key_idx = KEYPAD_NONE;
     bool key_val = false;
+
+    if (js_fd == -1)
+        return;
 
     if (read(js_fd, &event, sizeof(event)) != sizeof(event))
         return;
@@ -279,22 +290,22 @@ static void handle_wled_ip_async(void)
         if (af == AF_INET) {
             udp_sockaddr.ss_family = AF_INET;
             ((struct sockaddr_in *)&udp_sockaddr)->sin_addr = addr;
-            ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+            ((struct sockaddr_in *)&udp_sockaddr)->sin_port = htons(wled_port);
         } else if (af == AF_INET6) {
             udp_sockaddr.ss_family = AF_INET6;
             ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr = addr6;
-            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+            ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = htons(wled_port);
         }
         update = true;
     } else if (af == AF_INET && memcmp(&addr, &((struct sockaddr_in *)&udp_sockaddr)->sin_addr, sizeof(addr))) {
         udp_sockaddr.ss_family = AF_INET;
         memcpy(&((struct sockaddr_in *)&udp_sockaddr)->sin_addr, &addr, sizeof(addr));
-        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = htons(wled_port);
         update = true;
     } else if (af == AF_INET6 && memcmp(&addr6, &((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, sizeof(addr6))) {
         udp_sockaddr.ss_family = AF_INET6;
         memcpy(&((struct sockaddr_in6 *)&udp_sockaddr)->sin6_addr, &addr6, sizeof(addr6));
-        ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = wled_port;
+        ((struct sockaddr_in6 *)&udp_sockaddr)->sin6_port = htons(wled_port);
         update = true;
     }
 
@@ -309,35 +320,107 @@ static void handle_wled_ip_async(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "Usage: game WLED-IP WLED-PORT JOYSTICK\n");
+    fprintf(stderr, "Usage: matelight [options]\n");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -a, --address\t\t\tWLED address\n");
+    fprintf(stderr, "  -p, --port\t\t\tWLED port\n");
+    fprintf(stderr, "  -m, --mdns-description\tWLED MDNS description\n");
+    fprintf(stderr, "  -j, --joystick-device\t\tjoystick device\n");
+    fprintf(stderr, "  -g, --game\t\t\tgame name\n");
+    fprintf(stderr, "  -S, --start\t\t\tstart game on startup\n");
+    fprintf(stderr, "  -M, --mqtt\t\t\tenable MQTT\n");
+    fprintf(stderr, "  -h, --help\t\t\thelp\n");
     exit(EXIT_FAILURE);
 }
 
+static struct option long_options[] = {
+    {"address",             required_argument,  NULL,   'a'},
+    {"port",                required_argument,  NULL,   'p'},
+    {"mdns-description",    required_argument,  NULL,   'm'},
+    {"joystick-device",     required_argument,  NULL,   'j'},
+    {"game",                required_argument,  NULL,   'g'},
+    {"start",               no_argument,        NULL,   'S'},
+    {"mqtt",                no_argument,        NULL,   'M'},
+    {"help",                no_argument,        NULL,   'h'},
+    {NULL,                  0,                  NULL,   0}
+};
+
 int main(int argc, char *argv[])
 {
+    int c;
     int opt;
     size_t i;
 
-    if (argc != 4) {
-        usage();
+    for (;;) {
+        c = getopt_long(argc, argv, "a:p:m:j:g:SMh", long_options, NULL);
+        if (c == -1)
+            break;
+
+        switch (c) {
+            case 'a':
+                address = optarg;
+                break;
+
+            case 'p':
+                wled_port = atoi(optarg);
+                if (wled_port <= 0 || wled_port >= 65536) usage();
+                break;
+
+            case 'm':
+                mdns_description = optarg;
+                break;
+
+            case 'j':
+                joypad_dev = optarg;
+                break;
+
+            case 'g':
+                start_game = -1;
+                for (i = 0; i < ARRAY_LENGTH(games); i++) {
+                    if (strcmp(games[i]->name, optarg) == 0) {
+                        start_game = i;
+                        break;
+                    }
+                }
+                if (start_game == -1) usage();
+                break;
+
+            case 'S':
+                start_on_startup = true;
+                break;
+
+            case 'M':
+                mqtt = true;
+                break;
+
+            case 'h':
+            case '?':
+            default:
+                usage();
+                break;
+        }
     }
 
-    fprintf(stderr, "starting game controller\n");
+    if (optind < argc)
+        usage();
+
+    if (! address && ! mdns_description)
+        usage();
+
+    fprintf(stderr, "starting matelight controller\n");
 
     (void)setlocale(LC_ALL, "C.UTF-8");
 
     srand(time(NULL));
 
-    wled_port = htons(atoi(argv[2]));
-
     memset(&udp_sockaddr, '\0', sizeof(udp_sockaddr));
     udp_sockaddr.ss_family = AF_UNSPEC;
-    if (strncmp(argv[1], "mdns:", 5) == 0) {
-        wled_ds = argv[1] + 5;
-    } else {
+    if (address) {
         udp_sockaddr.ss_family = AF_INET;
-        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = wled_port;
-        ((struct sockaddr_in *)&udp_sockaddr)->sin_addr.s_addr = inet_addr(argv[1]);
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_port = htons(wled_port);
+        ((struct sockaddr_in *)&udp_sockaddr)->sin_addr.s_addr = inet_addr(address);
+    } else {
+        wled_ds = mdns_description;
     }
 
     udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -346,16 +429,20 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    js_fd = open(argv[3], O_RDONLY);
-    if (js_fd == -1) {
-        perror(argv[3]);
-        exit(EXIT_FAILURE);
-    }
+    if (joypad_dev) {
+        js_fd = open(joypad_dev, O_RDONLY);
+        if (js_fd == -1) {
+            perror(joypad_dev);
+            exit(EXIT_FAILURE);
+        }
 
-    opt = fcntl(js_fd, F_GETFL);
-    if (opt >= 0) {
-        opt |= O_NONBLOCK;
-        fcntl(js_fd, F_SETFL, opt);
+        opt = fcntl(js_fd, F_GETFL);
+        if (opt >= 0) {
+            opt |= O_NONBLOCK;
+            fcntl(js_fd, F_SETFL, opt);
+        }
+    } else {
+        js_fd = -1;
     }
 
     ip_init();
@@ -363,7 +450,9 @@ int main(int argc, char *argv[])
     if (wled_ds) {
         mdns_init();
     }
-    mqtt_init();
+    if (mqtt) {
+        mqtt_init();
+    }
 
     for (i = 0; i < ARRAY_LENGTH(games); i++) {
         if (games[i]->init_func) {
@@ -375,16 +464,22 @@ int main(int argc, char *argv[])
     last_tick_val = 0.0;
     ticks = 0;
 
+    cur_game = 0;
+    if (start_game != -1)
+        cur_game = start_game;
+
     while (! get_game()->playable) {
         cur_game++;
         cur_game %= ARRAY_LENGTH(games);
     }
 
     if (get_game()->activate_func) {
-        get_game()->activate_func(false);
+        get_game()->activate_func(start_on_startup);
     }
 
-    do_announce_my_ip();
+    if (! start_on_startup) {
+        do_announce_my_ip();
+    }
 
     for (;;) {
         handle_input();
