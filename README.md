@@ -45,5 +45,18 @@ mkfifo /tmp/js0.fifo
 
 TODO:
 -----
-- MQTT/JSON API for text
-- More games: https://gamedev.stackexchange.com/questions/8155/styles-of-games-that-work-at-low-resolution/175311#175311
+- Games:
+  - Tetris: Increase speed
+  - Pong: AI
+  - Space Invaders
+  - Breakout
+  - More games: https://gamedev.stackexchange.com/questions/8155/styles-of-games-that-work-at-low-resolution/175311#175311
+- MQTT:
+  - Hackerspace Open/Closed
+  - MQTT/JSON API for text
+- Input:
+  - Joystick hotplug (with udev monitor)
+  - Support multiple joysticks
+- UI:
+  - Support Konami Code: ↑ ↑ ↓ ↓ ← → ← → B A Start
+  - Game over screen
