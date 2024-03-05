@@ -1,5 +1,6 @@
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +13,6 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <getopt.h>
-#include <linux/joystick.h>
 #include <pthread.h>
 
 #include "matelight.h"
@@ -20,7 +20,8 @@
 static char *address = NULL;
 static int wled_port = 21324;
 static char *mdns_description = NULL;
-static char *joypad_dev = "/dev/input/js0";
+static char *joypad_dev = NULL;
+static bool joypad_udev = false;
 static int start_game = -1;
 static bool start_on_startup = false;
 static bool mqtt = false;
@@ -29,13 +30,11 @@ static struct sockaddr_storage udp_sockaddr = { 0 };
 static char wled_ip_new[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
 const char *wled_ds = NULL;
 static int udp_fd = -1;
-static int js_fd = -1;
 
 static double start_time_val = 0.0;
 double time_val = 0.0;
 static double last_tick_val = 0.0;
 int ticks = 0;
-int key_state = 0;
 
 static bool display = false;
 static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
@@ -72,94 +71,27 @@ static const struct game *get_game(void)
 
 static void handle_input(void)
 {
-    struct js_event event;
     int key_idx = KEYPAD_NONE;
     bool key_val = false;
 
-    if (js_fd == -1)
-        return;
-
-    if (read(js_fd, &event, sizeof(event)) != sizeof(event))
-        return;
-
-    switch (event.type) {
-        case JS_EVENT_BUTTON:
-            switch (event.number) {
-                case 8:
-                    key_idx = KEYPAD_SELECT;
-                    break;
-                case 9:
-                    key_idx = KEYPAD_START;
-                    break;
-                case 0:
-                    key_idx = KEYPAD_B;
-                    break;
-                case 1:
-                    key_idx = KEYPAD_A;
-                    break;
-                default:
-                    key_idx = KEYPAD_NONE;
-                    break;
+    while (read_joystick(&key_idx, &key_val)) {
+        if (key_idx == KEYPAD_SELECT && key_val && get_game()->playable) {
+            if (get_game()->deactivate_func) {
+                get_game()->deactivate_func();
             }
-            if (key_idx != KEYPAD_NONE) {
-                key_val = !!event.value;
-                if (key_val) {
-                    key_state |= key_idx;
-                } else {
-                    key_state &= ~key_idx;
-                }
+            do {
+                cur_game++;
+                cur_game %= ARRAY_LENGTH(games);
+            } while (! get_game()->playable);
+            if (get_game()->activate_func) {
+                fprintf(stderr, "starting game: %s\n", get_game()->name);
+                get_game()->activate_func(true);
             }
-            break;
-        case JS_EVENT_AXIS:
-            switch (event.number) {
-                case 0:
-                    if (event.value <= -1024) {
-                        key_state |= KEYPAD_LEFT;
-                        key_state &= ~KEYPAD_RIGHT;
-                    } else if (event.value >= 1024) {
-                        key_state &= ~KEYPAD_LEFT;
-                        key_state |= KEYPAD_RIGHT;
-                    } else {
-                        key_state &= ~KEYPAD_LEFT;
-                        key_state &= ~KEYPAD_RIGHT;
-                    }
-                    break;
-                case 1:
-                    if (event.value <= -1024) {
-                        key_state |= KEYPAD_UP;
-                        key_state &= ~KEYPAD_DOWN;
-                    } else if (event.value >= 1024) {
-                        key_state &= ~KEYPAD_UP;
-                        key_state |= KEYPAD_DOWN;
-                    } else {
-                        key_state &= ~KEYPAD_UP;
-                        key_state &= ~KEYPAD_DOWN;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-
-    if (key_idx == KEYPAD_SELECT && key_val && get_game()->playable) {
-        if (get_game()->deactivate_func) {
-            get_game()->deactivate_func();
         }
-        do {
-            cur_game++;
-            cur_game %= ARRAY_LENGTH(games);
-        } while (! get_game()->playable);
-        if (get_game()->activate_func) {
-            fprintf(stderr, "starting game: %s\n", get_game()->name);
-            get_game()->activate_func(true);
-        }
-    }
 
-    if (get_game()->input_func) {
-        get_game()->input_func(key_idx, key_val);
+        if (get_game()->input_func) {
+            get_game()->input_func(key_idx, key_val);
+        }
     }
 }
 
@@ -326,6 +258,7 @@ static void usage(void)
     fprintf(stderr, "  -p, --port\t\t\tWLED port\n");
     fprintf(stderr, "  -m, --mdns-description\tWLED MDNS description\n");
     fprintf(stderr, "  -j, --joystick-device\t\tjoystick device\n");
+    fprintf(stderr, "  -u, --udev-hotplug\t\thotpluggable joystick devices\n");
     fprintf(stderr, "  -g, --game\t\t\tgame name\n");
     fprintf(stderr, "  -S, --start\t\t\tstart game on startup\n");
     fprintf(stderr, "  -M, --mqtt\t\t\tenable MQTT\n");
@@ -338,6 +271,7 @@ static struct option long_options[] = {
     {"port",                required_argument,  NULL,   'p'},
     {"mdns-description",    required_argument,  NULL,   'm'},
     {"joystick-device",     required_argument,  NULL,   'j'},
+    {"udev-hotplug",        no_argument,        NULL,   'u'},
     {"game",                required_argument,  NULL,   'g'},
     {"start",               no_argument,        NULL,   'S'},
     {"mqtt",                no_argument,        NULL,   'M'},
@@ -348,11 +282,10 @@ static struct option long_options[] = {
 int main(int argc, char *argv[])
 {
     int c;
-    int opt;
     size_t i;
 
     for (;;) {
-        c = getopt_long(argc, argv, "a:p:m:j:g:SMh", long_options, NULL);
+        c = getopt_long(argc, argv, "a:p:m:j:ug:SMh", long_options, NULL);
         if (c == -1)
             break;
 
@@ -372,6 +305,10 @@ int main(int argc, char *argv[])
 
             case 'j':
                 joypad_dev = optarg;
+                break;
+
+            case 'u':
+                joypad_udev = true;
                 break;
 
             case 'g':
@@ -407,6 +344,12 @@ int main(int argc, char *argv[])
     if (! address && ! mdns_description)
         usage();
 
+    if (joypad_dev && joypad_udev)
+        usage();
+
+    if (! joypad_dev && ! joypad_udev)
+        usage();
+
     fprintf(stderr, "starting matelight controller\n");
 
     (void)setlocale(LC_ALL, "C.UTF-8");
@@ -429,20 +372,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    input_reset();
     if (joypad_dev) {
-        js_fd = open(joypad_dev, O_RDONLY);
-        if (js_fd == -1) {
-            perror(joypad_dev);
-            exit(EXIT_FAILURE);
-        }
-
-        opt = fcntl(js_fd, F_GETFL);
-        if (opt >= 0) {
-            opt |= O_NONBLOCK;
-            fcntl(js_fd, F_SETFL, opt);
-        }
-    } else {
-        js_fd = -1;
+        init_joystick(joypad_dev);
+    } else if (joypad_udev) {
+        init_udev_hotplug();
     }
 
     ip_init();

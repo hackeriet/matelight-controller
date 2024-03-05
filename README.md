@@ -24,7 +24,7 @@ Input:
 
 Build:
 ------
-Requirements: libavahi-client, libcurl, libmosquitto.
+Requirements: libavahi-client, libcurl, libudev, libmosquitto.
 ```
 make
 ```

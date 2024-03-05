@@ -104,6 +104,10 @@ extern const struct game pong_game;
 extern char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
 extern void ip_init(void);
 extern void mdns_init(void);
+extern void input_reset(void);
+extern void init_joystick(const char *path);
+extern void init_udev_hotplug(void);
+extern bool read_joystick(int *key_idx, bool *key_val);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);
 
