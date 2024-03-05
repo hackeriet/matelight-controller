@@ -96,7 +96,7 @@ bool wled_api_check(const char *addr)
         //fprintf(stderr, "%zu bytes retrieved\n", chunk.size);
         //fprintf(stderr, "%.*s\n", (int)chunk.size, chunk.memory);
         xmlok = wled_xml_check(&chunk);
-        printf("wledapi: address: %s, %s-WLED: %s\n", addr, wled_ds, (xmlok ? "yes" : "no"));
+        fprintf(stderr, "wledapi: address: %s, %s-WLED: %s\n", addr, wled_ds, (xmlok ? "yes" : "no"));
     }
 
     curl_easy_cleanup(curl_handle);

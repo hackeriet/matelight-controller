@@ -229,6 +229,11 @@ void init_udev_hotplug(void)
     struct udev_device *dev = NULL;
 
     if (udev_ctx != NULL) {
+        if (udev_monitor != NULL) {
+            udev_monitor_unref(udev_monitor);
+        }
+        udev_monitor = NULL;
+
         udev_unref(udev_ctx);
         udev_ctx = NULL;
     }
@@ -301,12 +306,12 @@ static void udev_monitor_poll(void)
             val = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
             action = udev_device_get_action(dev);
 
-            if (val && strcmp(val, "1") && action) {
-                if (strcmp(action, "add")) {
+            if (val && strcmp(val, "1") == 0 && action) {
+                if (strcmp(action, "add") == 0) {
                     add_udev_device(dev);
-                } else if (strcmp(action, "remove")) {
+                } else if (strcmp(action, "remove") == 0) {
                     remove_udev_device(dev);
-                } else if (strcmp(action, "change")) {
+                } else if (strcmp(action, "change") == 0) {
                     remove_udev_device(dev);
                     add_udev_device(dev);
                 }
