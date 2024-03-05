@@ -31,6 +31,8 @@ static char wled_ip_new[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
 const char *wled_ds = NULL;
 static int udp_fd = -1;
 
+static int joystick_cnt = -1;
+
 static double start_time_val = 0.0;
 double time_val = 0.0;
 static double last_tick_val = 0.0;
@@ -85,6 +87,8 @@ static const struct game *get_game(void)
 
 static void handle_input(void)
 {
+    int new_joystick_cnt = 0;
+    char text[100] = { 0 };
     struct joystick *joystick = NULL;
 
     while (read_joystick(&joystick)) {
@@ -116,6 +120,21 @@ static void handle_input(void)
         if (get_game()->input_func) {
             get_game()->input_func(joystick->player, joystick->last_key_idx, joystick->last_key_val, joystick->key_state);
         }
+    }
+
+    new_joystick_cnt = count_joysticks();
+    if (joystick_cnt != new_joystick_cnt) {
+        if (new_joystick_cnt == 1) {
+            snprintf(text, sizeof(text), "1 joypad");
+        } else {
+            snprintf(text, sizeof(text), "%d joypads", new_joystick_cnt);
+        }
+        if (new_joystick_cnt > joystick_cnt) {
+            do_announce(text, COLOR_GREEN, COLOR_BLACK, 1, 10.0);
+        } else {
+            do_announce(text, COLOR_RED, COLOR_BLACK, 1, 10.0);
+        }
+        joystick_cnt = new_joystick_cnt;
     }
 }
 

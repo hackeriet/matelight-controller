@@ -128,6 +128,7 @@ extern void input_reset(void);
 extern void init_joystick(const char *devnode);
 extern void init_udev_hotplug(void);
 extern bool read_joystick(struct joystick **joystick_ptr);
+extern int count_joysticks(void);
 extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);

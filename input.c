@@ -467,6 +467,20 @@ bool read_joystick(struct joystick **joystick_ptr)
     return true;
 }
 
+extern int count_joysticks(void)
+{
+    size_t i;
+    int cnt = 0;
+
+    for (i = 0; i < num_joysticks; i++) {
+        if (joysticks[i].fd != -1) {
+            cnt++;
+        }
+    }
+
+    return cnt;
+}
+
 bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length)
 {
     size_t hi, si;
