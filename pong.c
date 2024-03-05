@@ -145,7 +145,8 @@ static void tick(void)
 
 static void input(int player, int key_idx, bool key_val, int key_state)
 {
-    (void)player;
+    int paddle1, paddle2;
+
     (void)key_state;
 
     switch (game_mode) {
@@ -157,19 +158,33 @@ static void input(int player, int key_idx, bool key_val, int key_state)
                     game_pause = 0;
                 }
             }
-            if (key_state & KEYPAD_LEFT) {
-                move(PADDLE_HIGH, MOVE_LEFT);
-            } else if (key_state & KEYPAD_RIGHT) {
-                move(PADDLE_HIGH, MOVE_RIGHT);
+
+            if (player == 2) {
+                paddle1 = PADDLE_HIGH;
+                paddle2 = PADDLE_LOW;
             } else {
-                move(PADDLE_HIGH, MOVE_NONE);
+                paddle1 = PADDLE_LOW;
+                paddle2 = PADDLE_HIGH;
             }
-            if (key_state & KEYPAD_B) {
-                move(PADDLE_LOW, MOVE_LEFT);
-            } else if (key_state & KEYPAD_A) {
-                move(PADDLE_LOW, MOVE_RIGHT);
-            } else {
-                move(PADDLE_LOW, MOVE_NONE);
+
+            if (key_idx == KEYPAD_LEFT || key_idx == KEYPAD_RIGHT) {
+                if (key_idx == KEYPAD_LEFT && key_val) {
+                    move(paddle1, MOVE_LEFT);
+                } else if (key_idx == KEYPAD_RIGHT && key_val) {
+                    move(paddle1, MOVE_RIGHT);
+                } else {
+                    move(paddle1, MOVE_NONE);
+                }
+            }
+
+            if (key_idx == KEYPAD_B || key_idx == KEYPAD_A) {
+                if (key_idx == KEYPAD_B && key_val) {
+                    move(paddle2, MOVE_LEFT);
+                } else if (key_idx == KEYPAD_A && key_val) {
+                    move(paddle2, MOVE_RIGHT);
+                } else {
+                    move(paddle2, MOVE_NONE);
+                }
             }
             break;
 
