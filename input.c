@@ -9,17 +9,31 @@
 
 #include "matelight.h"
 
-static int js_fd = -1;
+#define MAX_JOYSTICKS 64
+
+struct joystick {
+    int fd;
+};
+
+static struct joystick joysticks[MAX_JOYSTICKS] = { 0 };
+static size_t num_joysticks = 0;
+
 static struct udev *udev_ctx = NULL;
 
 int key_state = 0;
 
 void input_reset(void)
 {
-    if (js_fd != -1) {
-        close(js_fd);
-        js_fd = -1;
+    size_t i;
+
+    for (i = 0; i < num_joysticks; i++) {
+        if (joysticks[i].fd != -1) {
+            close(joysticks[i].fd);
+            joysticks[i].fd = -1;
+        }
     }
+    num_joysticks = 0;
+
     if (udev_ctx != NULL) {
         udev_unref(udev_ctx);
         udev_ctx = NULL;
@@ -30,28 +44,39 @@ void input_reset(void)
 
 void init_joystick(const char *path)
 {
+    int fd;
     int opt;
 
-    input_reset();
-
     if (path) {
-        js_fd = open(path, O_RDONLY);
-        if (js_fd == -1) {
+        fd = open(path, O_RDONLY);
+        if (fd == -1) {
             perror(path);
             exit(EXIT_FAILURE);
         }
 
-        opt = fcntl(js_fd, F_GETFL);
+        opt = fcntl(fd, F_GETFL);
         if (opt >= 0) {
             opt |= O_NONBLOCK;
-            fcntl(js_fd, F_SETFL, opt);
+            fcntl(fd, F_SETFL, opt);
         }
+
+        if (num_joysticks >= MAX_JOYSTICKS) {
+            fprintf(stderr, "init_joystick: Max joysticks opened.\n");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+
+        joysticks[num_joysticks].fd = fd;
+        num_joysticks++;
     }
 }
 
 void init_udev_hotplug(void)
 {
-    input_reset();
+    if (udev_ctx != NULL) {
+        udev_unref(udev_ctx);
+        udev_ctx = NULL;
+    }
 
     udev_ctx = udev_new();
 
@@ -66,15 +91,27 @@ void init_udev_hotplug(void)
 
 bool read_joystick(int *key_idx, bool *key_val)
 {
-    struct js_event event;
+    size_t i;
+    bool has_event = false;
+    struct js_event event = { 0 };
 
     *key_idx = KEYPAD_NONE;
     *key_val = false;
 
-    if (js_fd == -1)
+    if (num_joysticks <= 0)
         return false;
 
-    if (read(js_fd, &event, sizeof(event)) != sizeof(event))
+    for (i = 0; i < num_joysticks; i++) {
+        if (joysticks[i].fd == -1)
+            continue;
+
+        if (read(joysticks[i].fd, &event, sizeof(event)) == sizeof(event)) {
+            has_event = true;
+            break;
+        }
+    }
+
+    if (! has_event)
         return false;
 
     switch (event.type) {
