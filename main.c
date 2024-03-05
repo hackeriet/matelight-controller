@@ -71,11 +71,10 @@ static const struct game *get_game(void)
 
 static void handle_input(void)
 {
-    int key_idx = KEYPAD_NONE;
-    bool key_val = false;
+    struct joystick *joystick = NULL;
 
-    while (read_joystick(&key_idx, &key_val)) {
-        if (key_idx == KEYPAD_SELECT && key_val && get_game()->playable) {
+    while (read_joystick(&joystick)) {
+        if (joystick->last_key_idx == KEYPAD_SELECT && joystick->last_key_val && get_game()->playable) {
             if (get_game()->deactivate_func) {
                 get_game()->deactivate_func();
             }
@@ -90,7 +89,7 @@ static void handle_input(void)
         }
 
         if (get_game()->input_func) {
-            get_game()->input_func(key_idx, key_val);
+            get_game()->input_func(joystick->player, joystick->last_key_idx, joystick->last_key_val, joystick->key_state);
         }
     }
 }

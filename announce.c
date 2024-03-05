@@ -146,8 +146,11 @@ static void tick(void)
     }
 }
 
-static void input(int key_idx, bool key_val)
+static void input(int player, int key_idx, bool key_val, int key_state)
 {
+    (void)player;
+    (void)key_state;
+
     switch (game_mode) {
         case MODE_GAME:
             switch (key_idx) {

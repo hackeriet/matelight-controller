@@ -70,6 +70,20 @@ static inline void set_pixel(char *screen, int y, int x, unsigned int color)
 #define KEYPAD_B        (1 << 6)
 #define KEYPAD_A        (1 << 7)
 
+#define MAX_JOYSTICKS 64
+#define KEY_HISTORY_SIZE 16
+
+struct joystick {
+    int fd;
+
+    int player;
+
+    int key_state;
+    int last_key_idx;
+    bool last_key_val;
+    int key_history[KEY_HISTORY_SIZE];
+};
+
 struct game {
     const char *name;
     bool playable;
@@ -77,7 +91,7 @@ struct game {
     void (*init_func)(void);
     void (*activate_func)(bool start);
     void (*deactivate_func)(void);
-    void (*input_func)(int key_idx, bool key_val);
+    void (*input_func)(int player, int key_idx, bool key_val, int key_state);
     void (*tick_func)();
     void (*render_func)(bool *display, char *screen);
     bool (*idle_func)(void);
@@ -85,7 +99,6 @@ struct game {
 
 extern double time_val;
 extern int ticks;
-extern int key_state;
 
 extern const char *wled_ds;
 extern void update_wled_ip(const char *address);
@@ -107,7 +120,8 @@ extern void mdns_init(void);
 extern void input_reset(void);
 extern void init_joystick(const char *path);
 extern void init_udev_hotplug(void);
-extern bool read_joystick(int *key_idx, bool *key_val);
+extern bool read_joystick(struct joystick **joystick_ptr);
+extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);
 

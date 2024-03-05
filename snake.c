@@ -386,17 +386,20 @@ static void draw_obj(char *screen, int y, int x)
     }
 }
 
-static void input(int key_idx, bool key_val)
+static void input(int player, int key_idx, bool key_val, int key_state)
 {
+    (void)player;
+    (void)key_state;
+
     switch (game_mode) {
         case MODE_GAME:
-            if (key_state & KEYPAD_LEFT) {
+            if (key_idx == KEYPAD_LEFT && key_val) {
                 move = MOVE_LEFT;
-            } else if (key_state & KEYPAD_RIGHT) {
+            } else if (key_idx == KEYPAD_RIGHT && key_val) {
                 move = MOVE_RIGHT;
-            } else if (key_state & KEYPAD_UP) {
+            } else if (key_idx == KEYPAD_UP && key_val) {
                 move = MOVE_UP;
-            } else if (key_state & KEYPAD_DOWN) {
+            } else if (key_idx == KEYPAD_DOWN && key_val) {
                 move = MOVE_DOWN;
             }
 

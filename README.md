@@ -56,7 +56,6 @@ TODO:
   - MQTT/JSON API for text
 - Input:
   - Joystick hotplug (with udev monitor)
-  - Support multiple joysticks
 - UI:
   - Support Konami Code: ↑ ↑ ↓ ↓ ← → ← → B A Start
   - Game over screen

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <linux/joystick.h>
@@ -9,18 +10,10 @@
 
 #include "matelight.h"
 
-#define MAX_JOYSTICKS 64
-
-struct joystick {
-    int fd;
-};
-
 static struct joystick joysticks[MAX_JOYSTICKS] = { 0 };
 static size_t num_joysticks = 0;
 
 static struct udev *udev_ctx = NULL;
-
-int key_state = 0;
 
 void input_reset(void)
 {
@@ -38,37 +31,53 @@ void input_reset(void)
         udev_unref(udev_ctx);
         udev_ctx = NULL;
     }
-
-    key_state = 0;
 }
 
 void init_joystick(const char *path)
 {
+    size_t i;
     int fd;
     int opt;
+    int player = 1;
 
-    if (path) {
-        fd = open(path, O_RDONLY);
-        if (fd == -1) {
-            perror(path);
-            exit(EXIT_FAILURE);
-        }
+    if (! path)
+        return;
 
-        opt = fcntl(fd, F_GETFL);
-        if (opt >= 0) {
-            opt |= O_NONBLOCK;
-            fcntl(fd, F_SETFL, opt);
-        }
-
-        if (num_joysticks >= MAX_JOYSTICKS) {
-            fprintf(stderr, "init_joystick: Max joysticks opened.\n");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
-
-        joysticks[num_joysticks].fd = fd;
-        num_joysticks++;
+    if (num_joysticks >= MAX_JOYSTICKS) {
+        fprintf(stderr, "init_joystick: Max joysticks opened.\n");
+        exit(EXIT_FAILURE);
     }
+
+    for (i = 0; i < num_joysticks; i++) {
+        if (joysticks[i].fd == -1)
+            continue;
+
+        if (joysticks[i].player == player) {
+            player++;
+            i = 0;
+        }
+    }
+
+    fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        perror(path);
+        exit(EXIT_FAILURE);
+    }
+
+    opt = fcntl(fd, F_GETFL);
+    if (opt >= 0) {
+        opt |= O_NONBLOCK;
+        fcntl(fd, F_SETFL, opt);
+    }
+
+    joysticks[num_joysticks].fd = fd;
+    joysticks[num_joysticks].player = player;
+    joysticks[num_joysticks].key_state = 0;
+    joysticks[num_joysticks].last_key_idx = KEYPAD_NONE;
+    joysticks[num_joysticks].last_key_val = false;
+    memset(joysticks[num_joysticks].key_history, '\0', sizeof(joysticks[num_joysticks].key_history));
+
+    num_joysticks++;
 }
 
 void init_udev_hotplug(void)
@@ -89,90 +98,142 @@ void init_udev_hotplug(void)
     exit(EXIT_FAILURE);
 }
 
-bool read_joystick(int *key_idx, bool *key_val)
+bool read_joystick(struct joystick **joystick_ptr)
 {
     size_t i;
-    bool has_event = false;
+    struct joystick *joystick = NULL;
     struct js_event event = { 0 };
-
-    *key_idx = KEYPAD_NONE;
-    *key_val = false;
+    int key_idx = KEYPAD_NONE;
 
     if (num_joysticks <= 0)
-        return false;
+        return NULL;
 
     for (i = 0; i < num_joysticks; i++) {
         if (joysticks[i].fd == -1)
             continue;
 
         if (read(joysticks[i].fd, &event, sizeof(event)) == sizeof(event)) {
-            has_event = true;
+            joystick = &joysticks[i];
             break;
         }
     }
 
-    if (! has_event)
-        return false;
+    if (! joystick)
+        return NULL;
 
-    switch (event.type) {
+    switch (event.type & ~JS_EVENT_INIT) {
         case JS_EVENT_BUTTON:
             switch (event.number) {
                 case 8:
-                    *key_idx = KEYPAD_SELECT;
+                    key_idx = KEYPAD_SELECT;
                     break;
                 case 9:
-                    *key_idx = KEYPAD_START;
+                    key_idx = KEYPAD_START;
                     break;
                 case 0:
-                    *key_idx = KEYPAD_B;
+                    key_idx = KEYPAD_B;
                     break;
                 case 1:
-                    *key_idx = KEYPAD_A;
+                    key_idx = KEYPAD_A;
                     break;
                 default:
                     break;
             }
-            if (*key_idx != KEYPAD_NONE) {
-                *key_val = !!event.value;
-                if (*key_val) {
-                    key_state |= *key_idx;
+            if (key_idx != KEYPAD_NONE) {
+                joystick->last_key_idx = key_idx;
+                joystick->last_key_val = !!event.value;
+                if (joystick->last_key_val) {
+                    joystick->key_state |= key_idx;
                 } else {
-                    key_state &= ~*key_idx;
+                    joystick->key_state &= ~key_idx;
                 }
+            } else {
+                joystick->last_key_idx = KEYPAD_NONE;
+                joystick->last_key_val = false;
             }
             break;
         case JS_EVENT_AXIS:
             switch (event.number) {
                 case 0:
                     if (event.value <= -1024) {
-                        key_state |= KEYPAD_LEFT;
-                        key_state &= ~KEYPAD_RIGHT;
+                        joystick->last_key_idx = KEYPAD_LEFT;
+                        joystick->last_key_val = true;
+                        joystick->key_state |= KEYPAD_LEFT;
+                        joystick->key_state &= ~KEYPAD_RIGHT;
                     } else if (event.value >= 1024) {
-                        key_state &= ~KEYPAD_LEFT;
-                        key_state |= KEYPAD_RIGHT;
+                        joystick->last_key_idx = KEYPAD_RIGHT;
+                        joystick->last_key_val = true;
+                        joystick->key_state &= ~KEYPAD_LEFT;
+                        joystick->key_state |= KEYPAD_RIGHT;
                     } else {
-                        key_state &= ~KEYPAD_LEFT;
-                        key_state &= ~KEYPAD_RIGHT;
+                        if (joystick->key_state & KEYPAD_LEFT) {
+                            joystick->last_key_idx = KEYPAD_LEFT;
+                        } else if (joystick->key_state & KEYPAD_RIGHT) {
+                            joystick->last_key_idx = KEYPAD_RIGHT;
+                        } else {
+                            joystick->last_key_idx = KEYPAD_NONE;
+                        }
+                        joystick->last_key_val = false;
+                        joystick->key_state &= ~KEYPAD_LEFT;
+                        joystick->key_state &= ~KEYPAD_RIGHT;
                     }
                     break;
                 case 1:
                     if (event.value <= -1024) {
-                        key_state |= KEYPAD_UP;
-                        key_state &= ~KEYPAD_DOWN;
+                        joystick->last_key_idx = KEYPAD_UP;
+                        joystick->last_key_val = true;
+                        joystick->key_state |= KEYPAD_UP;
+                        joystick->key_state &= ~KEYPAD_DOWN;
                     } else if (event.value >= 1024) {
-                        key_state &= ~KEYPAD_UP;
-                        key_state |= KEYPAD_DOWN;
+                        joystick->last_key_idx = KEYPAD_DOWN;
+                        joystick->last_key_val = true;
+                        joystick->key_state &= ~KEYPAD_UP;
+                        joystick->key_state |= KEYPAD_DOWN;
                     } else {
-                        key_state &= ~KEYPAD_UP;
-                        key_state &= ~KEYPAD_DOWN;
+                        if (joystick->key_state & KEYPAD_UP) {
+                            joystick->last_key_idx = KEYPAD_UP;
+                        } else if (joystick->key_state & KEYPAD_DOWN) {
+                            joystick->last_key_idx = KEYPAD_DOWN;
+                        } else {
+                            joystick->last_key_idx = KEYPAD_NONE;
+                        }
+                        joystick->key_state &= ~KEYPAD_UP;
+                        joystick->key_state &= ~KEYPAD_DOWN;
                     }
                     break;
                 default:
+                    joystick->last_key_idx = KEYPAD_NONE;
+                    joystick->last_key_val = false;
                     break;
             }
             break;
         default:
+            joystick->last_key_idx = KEYPAD_NONE;
+            joystick->last_key_val = false;
             break;
+    }
+
+    if (joystick->last_key_idx != KEYPAD_NONE && joystick->last_key_val) {
+        memmove(&joystick->key_history[1], &joystick->key_history[0], sizeof(joystick->key_history) - sizeof(joystick->key_history[0]));
+    }
+
+    *joystick_ptr = joystick;
+    return true;
+}
+
+bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length)
+{
+    size_t hi, si;
+
+    if (! joystick)
+        return false;
+
+    if (seq_length > KEY_HISTORY_SIZE)
+        return false;
+
+    for (hi = seq_length - 1, si = 0; si < seq_length; hi--, si++) {
+        if (joystick->key_history[hi] != seq[si])
+            return false;
     }
 
     return true;
