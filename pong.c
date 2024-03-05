@@ -91,10 +91,14 @@ static bool doit(void)
     if (lround(ball_y) == PADDLE_HIGH_Y && lround(ball_x) >= paddle_high_x && lround(ball_x) < (paddle_high_x + PADDLE_WIDTH)) {
         hit_offset = ((((ball_x - (double)paddle_high_x) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
 
-        if (hit_offset > 0.0) {
-            ball_dir = DIR_DOWN - ((M_PI * 0.5) * ((double)rand() / (double)RAND_MAX));
+        if (hit_offset > 5.0) {
+            ball_dir = DIR_DOWN - ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
+        } else if (hit_offset > 0.0) {
+            ball_dir = DIR_DOWN - ((M_PI * 0.2) * ((double)rand() / (double)RAND_MAX));
+        } else if (hit_offset <= 0.5) {
+            ball_dir = DIR_DOWN + ((M_PI * 0.2) * ((double)rand() / (double)RAND_MAX));
         } else {
-            ball_dir = DIR_DOWN + ((M_PI * 0.5) * ((double)rand() / (double)RAND_MAX));
+            ball_dir = DIR_DOWN + ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
         }
         ball_y += 1.0;
     }
@@ -103,10 +107,14 @@ static bool doit(void)
     if (lround(ball_y) == PADDLE_LOW_Y && lround(ball_x) >= paddle_low_x && lround(ball_x) < (paddle_low_x + PADDLE_WIDTH)) {
         hit_offset = ((((ball_x - (double)paddle_low_x) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
 
-        if (hit_offset > 0.0) {
-            ball_dir = DIR_UP + ((M_PI * 0.5) * ((double)rand() / (double)RAND_MAX));
+        if (hit_offset > 0.5) {
+            ball_dir = DIR_UP + ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
+        } else if (hit_offset > 0.0) {
+            ball_dir = DIR_UP + ((M_PI * 0.2) * ((double)rand() / (double)RAND_MAX));
+        } else if (hit_offset <= 0.5) {
+            ball_dir = DIR_UP - ((M_PI * 0.2) * ((double)rand() / (double)RAND_MAX));
         } else {
-            ball_dir = DIR_UP - ((M_PI * 0.5) * ((double)rand() / (double)RAND_MAX));
+            ball_dir = DIR_UP - ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
         }
         ball_y -= 1.0;
     }
