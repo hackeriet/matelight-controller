@@ -11,7 +11,7 @@ for input.
 
 Games implemented:
 ------------------
-- Snake
+- Snake (Original implementation: https://github.com/mamikk/snake )
 - Tetris (Original implementation: https://github.com/mamikk/tetris )
 - Flappy bird
 - Pong
