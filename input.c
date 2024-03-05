@@ -441,6 +441,7 @@ bool read_joystick(struct joystick **joystick_ptr)
                         } else {
                             joystick->last_key_idx = KEYPAD_NONE;
                         }
+                        joystick->last_key_val = false;
                         joystick->key_state &= ~KEYPAD_UP;
                         joystick->key_state &= ~KEYPAD_DOWN;
                     }
@@ -459,6 +460,7 @@ bool read_joystick(struct joystick **joystick_ptr)
 
     if (joystick->last_key_idx != KEYPAD_NONE && joystick->last_key_val) {
         memmove(&joystick->key_history[1], &joystick->key_history[0], sizeof(joystick->key_history) - sizeof(joystick->key_history[0]));
+        joystick->key_history[0] = joystick->last_key_idx;
     }
 
     *joystick_ptr = joystick;
