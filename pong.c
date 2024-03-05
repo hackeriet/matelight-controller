@@ -159,7 +159,7 @@ static void input(int player, int key_idx, bool key_val, int key_state)
                 }
             }
 
-            if (player == 2) {
+            if ((player % 2) == 0) {
                 paddle1 = PADDLE_HIGH;
                 paddle2 = PADDLE_LOW;
             } else {
