@@ -80,13 +80,15 @@ int get_available_player(void)
     return player;
 }
 
-bool open_joystick(const char *devnode, struct stat *st)
+bool open_joystick(const char *devnode, struct stat *st, bool check_joydev)
 {
     int fd = -1;
     int opt = 0;
+    int version = 0;
     char axes = 0;
     char buttons = 0;
     char name[128] = { 0 };
+    int save_errno = 0;
     struct joystick *joystick = NULL;
     int player = 1;
 
@@ -101,11 +103,27 @@ bool open_joystick(const char *devnode, struct stat *st)
         fcntl(fd, F_SETFL, opt);
     }
 
-	if (ioctl(fd, JSIOCGAXES, &axes) < 0)
+    if (check_joydev) {
+        if (ioctl(fd, JSIOCGVERSION, &version) < 0) {
+            save_errno = errno;
+            close(fd);
+            errno = save_errno;
+            return false;
+        }
+        if (version == 0) {
+            errno = EINVAL;
+            return false;
+        }
+    } else {
+        if (ioctl(fd, JSIOCGVERSION, &version) < 0)
+            version = 0;
+    }
+
+    if (ioctl(fd, JSIOCGAXES, &axes) < 0)
         axes = 0;
-	if (ioctl(fd, JSIOCGAXES, &buttons) < 0)
+    if (ioctl(fd, JSIOCGBUTTONS, &buttons) < 0)
         buttons = 0;
-	if (ioctl(fd, JSIOCGNAME(sizeof(name)), name) < 0)
+    if (ioctl(fd, JSIOCGNAME(sizeof(name)), name) < 0)
         *name = '\0';
 
     joystick = get_free_joystick();
@@ -150,7 +168,7 @@ void init_joystick(const char *devnode)
         exit(EXIT_FAILURE);
     }
 
-    if (! open_joystick(devnode, &st)) {
+    if (! open_joystick(devnode, &st, false)) {
         perror(devnode);
         exit(EXIT_FAILURE);
     }
@@ -187,7 +205,7 @@ static void add_udev_device(struct udev_device *dev)
         }
     }
 
-    if (! open_joystick(devnode, &st)) {
+    if (! open_joystick(devnode, &st, true)) {
         fprintf(stderr, "add_udev_device: unable to open %s\n", devnode);
         return;
     }
