@@ -57,5 +57,4 @@ TODO:
 - Input:
   - Joystick hotplug (with udev monitor)
 - UI:
-  - Support Konami Code: ↑ ↑ ↓ ↓ ← → ← → B A Start
   - Game over screen

@@ -56,6 +56,20 @@ static unsigned int async_announce_bgcolor = COLOR_BLACK;
 static int async_announce_rotate = 1;
 static double async_announce_speed = 5.0;
 
+static const int konami_code[] = {
+    KEYPAD_UP,
+    KEYPAD_UP,
+    KEYPAD_DOWN,
+    KEYPAD_DOWN,
+    KEYPAD_LEFT,
+    KEYPAD_RIGHT,
+    KEYPAD_LEFT,
+    KEYPAD_RIGHT,
+    KEYPAD_B,
+    KEYPAD_A,
+    KEYPAD_START
+};
+
 static const struct game *get_game(void)
 {
     size_t i;
@@ -86,6 +100,17 @@ static void handle_input(void)
                 fprintf(stderr, "starting game: %s\n", get_game()->name);
                 get_game()->activate_func(true);
             }
+        }
+
+        if (joystick_is_key_seq(joystick, konami_code, ARRAY_LENGTH(konami_code))) {
+            fprintf(stderr, "konami code activated\n");
+            if (get_game()->deactivate_func) {
+                get_game()->deactivate_func();
+            }
+            if (get_game()->activate_func) {
+                get_game()->activate_func(false);
+            }
+            do_announce("HACK THE PLANET", COLOR_BLACK, COLOR_YELLOW, 1, 10.0);
         }
 
         if (get_game()->input_func) {
