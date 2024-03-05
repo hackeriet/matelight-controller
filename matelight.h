@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <netinet/in.h>
+#include <linux/limits.h>
 
 #define ARRAY_LENGTH(array) (sizeof((array)) / sizeof((array)[0]))
 
@@ -75,6 +76,12 @@ static inline void set_pixel(char *screen, int y, int x, unsigned int color)
 
 struct joystick {
     int fd;
+    char devnode[PATH_MAX];
+    dev_t dev;
+
+    char axes;
+    char buttons;
+    char name[128];
 
     int player;
 
@@ -118,7 +125,7 @@ extern char ip_address[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
 extern void ip_init(void);
 extern void mdns_init(void);
 extern void input_reset(void);
-extern void init_joystick(const char *path);
+extern void init_joystick(const char *devnode);
 extern void init_udev_hotplug(void);
 extern bool read_joystick(struct joystick **joystick_ptr);
 extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length);

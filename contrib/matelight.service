@@ -1,6 +1,6 @@
 [Unit]
 Description=Matelight
-After=network.target dev-input-js0.device
+After=network.target
 StartLimitIntervalSec=400
 StartLimitBurst=3
 

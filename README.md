@@ -54,7 +54,5 @@ TODO:
 - MQTT:
   - Hackerspace Open/Closed
   - MQTT/JSON API for text
-- Input:
-  - Joystick hotplug (with udev monitor)
 - UI:
   - Game over screen
