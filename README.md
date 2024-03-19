@@ -15,6 +15,7 @@ Games implemented:
 - Tetris (Original implementation: https://github.com/mamikk/tetris )
 - Flappy bird
 - Pong
+- Breakout
 
 Input:
 ------
@@ -49,7 +50,6 @@ TODO:
   - Tetris: Increase speed
   - Pong: AI
   - Space Invaders
-  - Breakout
   - More games: https://gamedev.stackexchange.com/questions/8155/styles-of-games-that-work-at-low-resolution/175311#175311
 - MQTT:
   - Hackerspace Open/Closed
