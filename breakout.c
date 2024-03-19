@@ -25,8 +25,7 @@
 #define BRICK_ROWS              6
 
 static int game_mode = MODE_DEAD;
-static int game_pause = 0;
-static int tick_count = 0;
+static bool game_pause = false;
 
 static int paddle_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
 static int paddle_dir = MOVE_NONE;
@@ -54,8 +53,7 @@ static void setup_game(bool start)
     int y, x;
 
     game_mode = start ? MODE_GAME : MODE_DEAD;
-    game_pause = 0;
-    tick_count = 0;
+    game_pause = false;
 
     paddle_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
     paddle_dir = MOVE_NONE;
@@ -87,6 +85,9 @@ static bool doit(void)
 {
     double hit_offset;
     int ball_yi, ball_xi;
+
+    if (game_pause)
+        return true;
 
     /* move paddle */
     paddle_x += paddle_dir;
@@ -181,9 +182,9 @@ static void input(int player, int key_idx, bool key_val, int key_state)
         case MODE_GAME:
             if (key_idx == KEYPAD_START && key_val) {
                 if (! game_pause) {
-                    game_pause = 1;
+                    game_pause = true;
                 } else {
-                    game_pause = 0;
+                    game_pause = false;
                 }
             }
 

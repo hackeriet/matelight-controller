@@ -24,8 +24,7 @@
 #define DIR_DOWN                (M_PI * 0.5)
 
 static int game_mode = MODE_DEAD;
-static int game_pause = 0;
-static int tick_count = 0;
+static bool game_pause = false;
 
 static int paddle_high_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
 static int paddle_high_dir = MOVE_NONE;
@@ -39,8 +38,7 @@ static double ball_dir = DIR_DOWN;
 static void setup_game(bool start)
 {
     game_mode = start ? MODE_GAME : MODE_DEAD;
-    game_pause = 0;
-    tick_count = 0;
+    game_pause = false;
 
     paddle_high_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
     paddle_high_dir = MOVE_NONE;
@@ -65,6 +63,9 @@ static void deactivate(void)
 static bool doit(void)
 {
     double hit_offset;
+
+    if (game_pause)
+        return true;
 
     /* move high paddle */
     paddle_high_x += paddle_high_dir;
@@ -161,9 +162,9 @@ static void input(int player, int key_idx, bool key_val, int key_state)
         case MODE_GAME:
             if (key_idx == KEYPAD_START && key_val) {
                 if (! game_pause) {
-                    game_pause = 1;
+                    game_pause = true;
                 } else {
-                    game_pause = 0;
+                    game_pause = false;
                 }
             }
 

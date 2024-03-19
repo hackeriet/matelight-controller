@@ -262,7 +262,7 @@ struct tetris {
 };
 
 static int game_mode = MODE_DEAD;
-static int game_pause = 0;
+static bool game_pause = false;
 static double pause_start = 0.0;
 static struct tetris _tetris = { 0 };
 static struct tetris *tetris = &_tetris;
@@ -272,7 +272,7 @@ static void setup_game(bool start)
     int x, y;
 
     game_mode = start ? MODE_GAME : MODE_DEAD;
-    game_pause = 0;
+    game_pause = false;
     pause_start = 0.0;
 
     memset(tetris, '\0', sizeof(*tetris));
@@ -585,10 +585,10 @@ static void input(int player, int key_idx, bool key_val, int key_state)
 
             if (key_idx == KEYPAD_START && key_val) {
                 if (! game_pause) {
-                    game_pause = 1;
+                    game_pause = true;
                     pause_start = time_val;
                 } else {
-                    game_pause = 0;
+                    game_pause = false;
                     tetris->next_update += (time_val - pause_start);
                     pause_start = 0.0;
                 }

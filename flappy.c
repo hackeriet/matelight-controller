@@ -17,8 +17,7 @@
 #define START_OFFSET            GRID_WIDTH
 
 static int game_mode = MODE_DEAD;
-static int game_pause = 0;
-static int tick_count = 0;
+static int game_pause = false;
 static int button = 0;
 static int bird_y = 10;
 static int pipes_high[NUM_PIPES] = { 0 };
@@ -30,8 +29,7 @@ static void setup_game(bool start)
     int i, r;
 
     game_mode = start ? MODE_GAME : MODE_DEAD;
-    game_pause = 0;
-    tick_count = 0;
+    game_pause = false;
     button = 0;
     bird_y = (GRID_HEIGHT / 2);
     for (i = 0; i < NUM_PIPES; i++) {
@@ -58,6 +56,9 @@ static bool doit(void)
     int x;
     int ix;
     int pipe_idx;
+
+    if (game_pause)
+        return true;
 
     // move bird
     if (button) {
@@ -125,9 +126,9 @@ static void input(int player, int key_idx, bool key_val, int key_state)
         case MODE_GAME:
             if (key_idx == KEYPAD_START && key_val) {
                 if (! game_pause) {
-                    game_pause = 1;
+                    game_pause = true;
                 } else {
-                    game_pause = 0;
+                    game_pause = false;
                 }
             }
             if ((key_idx == KEYPAD_B || key_idx == KEYPAD_A) && key_val) {

@@ -40,7 +40,7 @@
 #define COLOR_POISON    COLOR_RED
 
 static int game_mode = MODE_DEAD;
-static int game_pause = 0;
+static bool game_pause = false;
 static int game_speed = 0;
 static int game_level = 0;
 static int tick_count = 0;
@@ -144,7 +144,7 @@ static void setup_game(bool start)
     int y, x;
 
     game_mode = start ? MODE_GAME : MODE_DEAD;
-    game_pause = 0;
+    game_pause = false;
     game_speed = 0;
     tick_count = 0;
     move = MOVE_NONE;
@@ -284,6 +284,8 @@ static void tick(void)
 {
     if (game_mode != MODE_GAME) return;
 
+    if (game_pause) return;
+
     tick_count++;
     if (game_speed && (tick_count % 4) != 0) return;
 
@@ -403,12 +405,16 @@ static void input(int player, int key_idx, bool key_val, int key_state)
                 move = MOVE_DOWN;
             }
 
-            //if (key_idx == KEYPAD_START && key_val) {
-            //    game_pause = ! game_pause;
-            //}
-            //if (key_idx == KEYPAD_B && key_val) {
-            //    game_speed = ! game_speed;
-            //}
+            if (key_idx == KEYPAD_START && key_val) {
+                if (! game_pause) {
+                    game_pause = true;
+                } else {
+                    game_pause = false;
+                }
+            }
+            if (key_idx == KEYPAD_B && key_val) {
+                game_speed = ! game_speed;
+            }
             if (key_idx == KEYPAD_A && key_val) {
                 game_level = ! game_level;
                 setup_game(true);
