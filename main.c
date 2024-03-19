@@ -31,7 +31,7 @@ static char wled_ip_new[MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)] = { 0 };
 const char *wled_ds = NULL;
 static int udp_fd = -1;
 
-static int joystick_cnt = -1;
+static int joystick_cnt = 0;
 
 static double start_time_val = 0.0;
 double time_val = 0.0;
@@ -421,6 +421,7 @@ int main(int argc, char *argv[])
     } else if (joypad_udev) {
         init_udev_hotplug();
     }
+    joystick_cnt = count_joysticks();
 
     ip_init();
     fprintf(stderr, "my IP-address is: %s\n", ip_address);
