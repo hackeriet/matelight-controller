@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -20,6 +21,9 @@
 #define DIR_UP                  (M_PI * 1.5)
 #define DIR_DOWN                (M_PI * 0.5)
 
+#define BRICK_START_ROW         3
+#define BRICK_ROWS              6
+
 static int game_mode = MODE_DEAD;
 static int game_pause = 0;
 static int tick_count = 0;
@@ -31,8 +35,23 @@ static double ball_y = (double)(GRID_HEIGHT / 2);
 static double ball_x = (double)(GRID_WIDTH / 2);
 static double ball_dir = DIR_DOWN;
 
+static uint8_t bricks[BRICK_ROWS * GRID_WIDTH] = { 0 };
+static uint32_t brick_colors[BRICK_ROWS * GRID_WIDTH] = { 0 };
+
+static const uint32_t brick_row_colors[BRICK_ROWS] = {
+    /* pride */
+    COLOR_RGB(228, 3, 3),
+    COLOR_RGB(255, 140, 0),
+    COLOR_RGB(255, 237, 0),
+    COLOR_RGB(0, 128, 38),
+    COLOR_RGB(36, 64, 142),
+    COLOR_RGB(115, 41, 130),
+};
+
 static void setup_game(bool start)
 {
+    int y, x;
+
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = 0;
     tick_count = 0;
@@ -43,6 +62,13 @@ static void setup_game(bool start)
     ball_y = (double)(GRID_HEIGHT / 2);
     ball_x = (double)(GRID_WIDTH / 2);
     ball_dir = DIR_DOWN;
+
+    for (y = 0; y < BRICK_ROWS; y++) {
+        for (x = 0; x < GRID_WIDTH; x++) {
+            bricks[(y * GRID_WIDTH) + x] = 1;
+            brick_colors[(y * GRID_WIDTH) + x] = brick_row_colors[y];
+        }
+    }
 }
 
 static void activate(bool start)
@@ -175,6 +201,15 @@ static void draw(char *screen)
     for (y = 0; y < GRID_HEIGHT; y++) {
         for (x = 0; x < GRID_WIDTH; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
+        }
+    }
+
+    // bricks
+    for (y = 0; y < BRICK_ROWS; y++) {
+        for (x = 0; x < GRID_WIDTH; x++) {
+            if (bricks[(y * GRID_WIDTH) + x]) {
+                set_pixel(screen, y + BRICK_START_ROW, x, brick_colors[(y * GRID_WIDTH) + x]);
+            }
         }
     }
 
