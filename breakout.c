@@ -36,6 +36,7 @@ static double ball_x = (double)(GRID_WIDTH / 2);
 static double ball_dir = DIR_DOWN;
 
 static uint8_t bricks[BRICK_ROWS * GRID_WIDTH] = { 0 };
+static size_t num_bricks = 0;
 static uint32_t brick_colors[BRICK_ROWS * GRID_WIDTH] = { 0 };
 
 static const uint32_t brick_row_colors[BRICK_ROWS] = {
@@ -66,6 +67,7 @@ static void setup_game(bool start)
     for (y = 0; y < BRICK_ROWS; y++) {
         for (x = 0; x < GRID_WIDTH; x++) {
             bricks[(y * GRID_WIDTH) + x] = 1;
+            num_bricks++;
             brick_colors[(y * GRID_WIDTH) + x] = brick_row_colors[y];
         }
     }
@@ -84,6 +86,7 @@ static void deactivate(void)
 static bool doit(void)
 {
     double hit_offset;
+    int ball_yi, ball_xi;
 
     /* move paddle */
     paddle_x += paddle_dir;
@@ -115,6 +118,24 @@ static bool doit(void)
             ball_dir = DIR_UP - ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
         }
         ball_y -= 1.0;
+    }
+
+    /* check ball/bricks collision */
+    if (lround(floor(ball_y)) >= BRICK_START_ROW && lround(floor(ball_y)) < (BRICK_START_ROW + BRICK_ROWS)) {
+        ball_yi = lround(floor(ball_y)) - BRICK_START_ROW;
+        ball_xi = lround(floor(ball_x));
+
+        if (bricks[(ball_yi * GRID_WIDTH) + ball_xi]) {
+            bricks[(ball_yi * GRID_WIDTH) + ball_xi] = 0;
+            if (num_bricks > 0)
+                num_bricks--;
+        }
+    }
+
+    if (num_bricks == 0) {
+        ball_y = -1.0;
+        ball_x = -1.0;
+        return false;
     }
 
     /* check ball/top wall collision */
