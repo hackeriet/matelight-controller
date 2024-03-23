@@ -1,5 +1,5 @@
 
-OBJS			= main.o ip.o mdns.o wledapi.o input.o mqtt.o announce.o snake.o tetris.o flappy.o pong.o breakout.o
+OBJS			= main.o ip.o mdns.o wledapi.o input.o mqtt.o announce.o snake.o tetris.o flappy.o pong.o breakout.o invaders.o
 
 TARGET			= matelight
 
