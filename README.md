@@ -48,6 +48,7 @@ TODO:
 -----
 - Games:
   - Tetris: Increase speed
+  - Pong/Breakout: Fix floating point rounding bugs
   - Pong: AI
   - Space Invaders
   - More games: https://gamedev.stackexchange.com/questions/8155/styles-of-games-that-work-at-low-resolution/175311#175311

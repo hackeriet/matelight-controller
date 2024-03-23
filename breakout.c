@@ -61,6 +61,7 @@ static void setup_game(bool start)
     ball_y = (double)(GRID_HEIGHT / 2);
     ball_x = (double)(GRID_WIDTH / 2);
     ball_dir = DIR_DOWN;
+    num_bricks = 0;
 
     for (y = 0; y < BRICK_ROWS; y++) {
         for (x = 0; x < GRID_WIDTH; x++) {
@@ -130,6 +131,7 @@ static bool doit(void)
             bricks[(ball_yi * GRID_WIDTH) + ball_xi] = 0;
             if (num_bricks > 0)
                 num_bricks--;
+            ball_dir = atan2(sin(ball_dir) * -1, cos(ball_dir));
         }
     }
 
