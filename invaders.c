@@ -225,7 +225,7 @@ static bool doit(void)
     if ((invaders_y + INVADERS_ROWS) > (SHOOTER_Y - 1)) {
         for (y = INVADERS_ROWS - 1; y >= 0; y--) {
             for (x = 0; x < GRID_WIDTH; x++) {
-                if (invaders[(y * GRID_WIDTH) + ((x + rnd) % GRID_WIDTH)]) {
+                if (invaders[(y * GRID_WIDTH) + x]) {
                     /* invaders outside grid */
                     if ((invaders_y + y) >= GRID_HEIGHT) {
                         player_bullet_y = -1;
