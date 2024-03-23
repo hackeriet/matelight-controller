@@ -22,7 +22,7 @@
 #define WLED_DNRGB      4
 
 // Display
-#define DISPLAY_TIMEOUT 1
+#define DISPLAY_TIMEOUT 3
 
 // RGB
 #define COLOR_RGB(r, g, b)    (((r) << 16) | ((g) << 8) | (b))
