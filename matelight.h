@@ -94,6 +94,7 @@ struct joystick {
 struct game {
     const char *name;
     bool playable;
+    bool non_interruptable;
     double tick_freq;
     void (*init_func)(void);
     void (*activate_func)(bool start);
@@ -116,6 +117,8 @@ extern void do_announce_async(char *text, unsigned int color, unsigned int bgcol
 extern const struct game announce_game;
 extern void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
 
+extern const struct game debug_game;
+
 extern const struct game snake_game;
 extern const struct game tetris_game;
 extern const struct game flappy_game;
@@ -132,6 +135,7 @@ extern void init_udev_hotplug(void);
 extern bool read_joystick(struct joystick **joystick_ptr);
 extern int count_joysticks(void);
 extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length);
+extern bool has_player(int player);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);
 

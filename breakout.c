@@ -268,6 +268,7 @@ static bool idle(void)
 const struct game breakout_game = {
     "breakout",
     true,
+    false,
     0.1,
     NULL,
     activate,

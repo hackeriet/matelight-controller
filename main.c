@@ -43,6 +43,7 @@ static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
 
 static const struct game *games[] = {
     &announce_game,
+    &debug_game,
     &snake_game,
     &tetris_game,
     &flappy_game,
@@ -94,17 +95,22 @@ static void handle_input(void)
     struct joystick *joystick = NULL;
 
     while (read_joystick(&joystick)) {
-        if (joystick->last_key_idx == KEYPAD_SELECT && joystick->last_key_val && get_game()->playable) {
+        if (joystick->last_key_idx == KEYPAD_SELECT && joystick->last_key_val && get_game()->playable && (! get_game()->non_interruptable)) {
             if (get_game()->deactivate_func) {
                 get_game()->deactivate_func();
             }
-            do {
-                cur_game++;
-                cur_game %= ARRAY_LENGTH(games);
-            } while (! get_game()->playable);
-            if (get_game()->activate_func) {
-                fprintf(stderr, "starting game: %s\n", get_game()->name);
-                get_game()->activate_func(true);
+            if (joystick->key_state & KEYPAD_START) {
+                fprintf(stderr, "starting debug game\n");
+                debug_game.activate_func(true);
+            } else {
+                do {
+                    cur_game++;
+                    cur_game %= ARRAY_LENGTH(games);
+                } while (! get_game()->playable);
+                if (get_game()->activate_func) {
+                    fprintf(stderr, "starting game: %s\n", get_game()->name);
+                    get_game()->activate_func(true);
+                }
             }
         }
 

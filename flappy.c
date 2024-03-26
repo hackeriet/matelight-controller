@@ -212,6 +212,7 @@ static bool idle(void)
 const struct game flappy_game = {
     "flappy bird",
     true,
+    false,
     0.1,
     NULL,
     activate,

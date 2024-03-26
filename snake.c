@@ -462,6 +462,7 @@ static bool idle(void)
 const struct game snake_game = {
     "snake",
     true,
+    false,
     0.1,
     NULL,
     activate,

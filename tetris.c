@@ -632,6 +632,7 @@ static bool idle(void)
 const struct game tetris_game = {
     "tetris",
     true,
+    false,
     0.1,
     NULL,
     activate,

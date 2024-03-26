@@ -467,7 +467,7 @@ bool read_joystick(struct joystick **joystick_ptr)
     return true;
 }
 
-extern int count_joysticks(void)
+int count_joysticks(void)
 {
     size_t i;
     int cnt = 0;
@@ -497,4 +497,16 @@ bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_l
     }
 
     return true;
+}
+
+bool has_player(int player)
+{
+    size_t i;
+
+    for (i = 0; i < num_joysticks; i++) {
+        if (joysticks[i].fd != -1 && joysticks[i].player == player)
+            return true;
+    }
+
+    return false;
 }

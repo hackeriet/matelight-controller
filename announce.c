@@ -244,6 +244,7 @@ static bool idle(void)
 const struct game announce_game = {
     "announce",
     false,
+    false,
     0.1,
     NULL,
     activate,

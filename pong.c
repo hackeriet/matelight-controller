@@ -262,6 +262,7 @@ static bool idle(void)
 const struct game pong_game = {
     "pong",
     true,
+    false,
     0.1,
     NULL,
     activate,

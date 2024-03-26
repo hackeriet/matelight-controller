@@ -426,6 +426,7 @@ static bool idle(void)
 const struct game invaders_game = {
     "invaders",
     true,
+    false,
     0.1,
     NULL,
     activate,
