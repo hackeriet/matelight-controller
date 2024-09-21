@@ -358,12 +358,18 @@ int main(int argc, char *argv[])
         switch (c) {
             case 'W':
                 grid_width = atoi(optarg);
-                if (grid_width < MIN_GRID_WIDTH || grid_width > MAX_GRID_WIDTH) usage();
+                if (grid_width < MIN_GRID_WIDTH || grid_width > MAX_GRID_WIDTH) {
+                    fprintf(stderr, "Grid width must be within %d and %d\n", MIN_GRID_WIDTH, MAX_GRID_WIDTH);
+                    usage();
+                }
                 break;
 
             case 'H':
                 grid_height = atoi(optarg);
-                if (grid_height < MIN_GRID_HEIGHT || grid_height > MAX_GRID_HEIGHT) usage();
+                if (grid_height < MIN_GRID_HEIGHT || grid_height > MAX_GRID_HEIGHT) {
+                    fprintf(stderr, "Grid height must be within %d and %d\n", MIN_GRID_HEIGHT, MAX_GRID_HEIGHT);
+                    usage();
+                }
                 break;
 
             case 'a':
@@ -372,7 +378,10 @@ int main(int argc, char *argv[])
 
             case 'p':
                 wled_port = atoi(optarg);
-                if (wled_port <= 0 || wled_port >= 65536) usage();
+                if (wled_port <= 0 || wled_port >= 65536) {
+                    fprintf(stderr, "WLED port must be within 1 and 65535\n");
+                    usage();
+                }
                 break;
 
             case 'm':
@@ -399,7 +408,10 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-                if (start_game == -1) usage();
+                if (start_game == -1) {
+                    fprintf(stderr, "Game \"%s\" not found.\n", optarg);
+                    usage();
+                }
                 break;
 
             case 'S':
@@ -425,14 +437,20 @@ int main(int argc, char *argv[])
     if (optind < argc)
         usage();
 
-    if (! address && ! mdns_description)
+    if (! address && ! mdns_description) {
+        fprintf(stderr, "Either WLED address or WLED MDNS description must be specified.\n");;
         usage();
+    }
 
-    if ((joypad_dev && joypad_udev) || (joypad_dev && keyboard) || (joypad_udev && keyboard))
+    if ((joypad_dev && joypad_udev) || (joypad_dev && keyboard) || (joypad_udev && keyboard)) {
+        fprintf(stderr, "Either joystick device, hotpluggable joystick mode or keyboard mode must be used.\n");;
         usage();
+    }
 
-    if (! joypad_dev && ! joypad_udev && ! keyboard)
+    if (! joypad_dev && ! joypad_udev && ! keyboard) {
+        fprintf(stderr, "Either joystick device, hotpluggable joystick mode or keyboard mode must be used.\n");;
         usage();
+    }
 
     fprintf(stderr, "starting matelight controller\n");
 
