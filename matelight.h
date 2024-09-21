@@ -12,10 +12,10 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 // Grid
-#define DEFAULT_GRID_WIDTH  10
-#define DEFAULT_GRID_HEIGHT 20
-//#define DEFAULT_GRID_WIDTH  20
-//#define DEFAULT_GRID_HEIGHT 12
+//#define DEFAULT_GRID_WIDTH  10
+//#define DEFAULT_GRID_HEIGHT 20
+#define DEFAULT_GRID_WIDTH  20
+#define DEFAULT_GRID_HEIGHT 12
 
 #define MIN_GRID_WIDTH  10
 #define MAX_GRID_WIDTH  20

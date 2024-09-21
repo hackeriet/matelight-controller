@@ -11,8 +11,8 @@ import struct
 import tkinter
 import tkinter.ttk
 
-DEFAULT_WIDTH = 10
-DEFAULT_HEIGHT = 20
+DEFAULT_WIDTH = 20
+DEFAULT_HEIGHT = 12
 UDP_PORT = 21324
 JS_EVENT_BUTTON = 0x01
 JS_EVENT_AXIS = 0x02
