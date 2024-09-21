@@ -11,6 +11,7 @@
 #include <linux/limits.h>
 #include <linux/joystick.h>
 #include <libudev.h>
+#include <termios.h>
 
 #include "matelight.h"
 
@@ -20,13 +21,19 @@ static size_t num_joysticks = 0;
 static struct udev *udev_ctx = NULL;
 static struct udev_monitor *udev_monitor = NULL;
 
+struct termios orig_termios = { 0 };
+static int stdin_flags = -1;
+static int esc_state = 0;
+
 void input_reset(void)
 {
     size_t i;
 
     for (i = 0; i < num_joysticks; i++) {
         if (joysticks[i].fd != -1) {
-            close(joysticks[i].fd);
+            if (joysticks[i].type == INPUT_JOYSTICK) {
+                close(joysticks[i].fd);
+            }
             joysticks[i].fd = -1;
         }
     }
@@ -134,6 +141,7 @@ bool open_joystick(const char *devnode, struct stat *st, bool check_joydev)
     }
     player = get_available_player();
 
+    joystick->type = INPUT_JOYSTICK;
     joystick->fd = fd;
     strncpy(joystick->devnode, devnode, sizeof(joystick->devnode));
     joystick->dev = st->st_rdev;
@@ -172,6 +180,74 @@ void init_joystick(const char *devnode)
         perror(devnode);
         exit(EXIT_FAILURE);
     }
+}
+
+static void reset_termios(void)
+{
+    if (stdin_flags >= 0) {
+        fcntl(STDIN_FILENO, F_SETFL, stdin_flags);
+    }
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+void init_keyboard(void)
+{
+    struct termios new_termios = { 0 };
+    int opt = 0;
+    struct joystick *joystick = NULL;
+    int player = 1;
+
+    if (tcgetattr(STDIN_FILENO, &orig_termios) != 0) {
+        perror("/dev/stdin");
+        exit(EXIT_FAILURE);
+    }
+
+    memcpy(&new_termios, &orig_termios, sizeof(orig_termios));
+    new_termios.c_iflag &= ~(INPCK | ISTRIP | IXON);
+    new_termios.c_cflag |= (CS8);
+    new_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+    new_termios.c_cc[VMIN] = 0;
+    new_termios.c_cc[VTIME] = 0;
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios) != 0) {
+        perror("/dev/stdin");
+        exit(EXIT_FAILURE);
+    }
+
+    atexit(reset_termios);
+
+    opt = fcntl(STDIN_FILENO, F_GETFL);
+    if (opt >= 0) {
+        stdin_flags = opt;
+        opt |= O_NONBLOCK;
+        fcntl(STDIN_FILENO, F_SETFL, opt);
+    }
+
+    joystick = get_free_joystick();
+    if (! joystick) {
+        errno = ENOMEM;
+        perror("/dev/stdin");
+        exit(EXIT_FAILURE);
+    }
+    player = get_available_player();
+
+    joystick->type = INPUT_KEYBOARD;
+    joystick->fd = STDIN_FILENO;
+    strncpy(joystick->devnode, "/dev/stdin", sizeof(joystick->devnode));
+    joystick->dev = -1;
+
+    joystick->axes = 2;
+    joystick->buttons = 4;
+    memcpy(joystick->name, "keyboard", sizeof(joystick->name));
+
+    joystick->player = player;
+
+    joystick->key_state = 0;
+    joystick->last_key_idx = KEYPAD_NONE;
+    joystick->last_key_val = false;
+    memset(joysticks[num_joysticks].key_history, '\0', sizeof(joysticks[num_joysticks].key_history));
+
+    fprintf(stderr, "initialized keyboard, (player: %d)\n", player);
 }
 
 static void add_udev_device(struct udev_device *dev)
@@ -333,41 +409,88 @@ static void udev_monitor_poll(void)
                     remove_udev_device(dev);
                     add_udev_device(dev);
                 }
-            }
+                }
 
             udev_device_unref(dev);
         }
     }
 }
 
-bool read_joystick(struct joystick **joystick_ptr)
+static void process_keyboard_input(struct joystick *joystick, char key)
 {
-    size_t i;
-    struct joystick *joystick = NULL;
-    struct js_event event = { 0 };
     int key_idx = KEYPAD_NONE;
 
-    udev_monitor_poll();
+    if (esc_state == 0 && key == '\033') {
+        esc_state = 1;
+        return;
+    }
 
-    if (num_joysticks <= 0)
-        return NULL;
+    if (esc_state == 1 && key == '[') {
+        esc_state = 2;
+        return;
+    }
 
-    for (i = 0; i < num_joysticks; i++) {
-        if (joysticks[i].fd == -1)
-            continue;
-
-        if (read(joysticks[i].fd, &event, sizeof(event)) == sizeof(event)) {
-            joystick = &joysticks[i];
-            break;
+    // FCEUX defaults
+    if (esc_state == 2) {
+        switch (key) {
+            case 'A':
+                key_idx = KEYPAD_UP;
+                break;
+            case 'B':
+                key_idx = KEYPAD_DOWN;
+                break;
+            case 'D':
+                key_idx = KEYPAD_LEFT;
+                break;
+            case 'C':
+                key_idx = KEYPAD_RIGHT;
+                break;
+            default:
+                break;
+        }
+    } else {
+        switch (key) {
+            case 'f':
+            case 'F':
+                key_idx = KEYPAD_A;
+                break;
+            case 'd':
+            case 'D':
+                key_idx = KEYPAD_B;
+                break;
+            case 's':
+            case 'S':
+                key_idx = KEYPAD_SELECT;
+                break;
+            case '\n':
+            case '\r':
+                key_idx = KEYPAD_START;
+                break;
+            default:
+                break;
         }
     }
 
-    if (! joystick)
-        return NULL;
+    esc_state = 0;
 
-    switch (event.type & ~JS_EVENT_INIT) {
+    if (key_idx != KEYPAD_NONE) {
+        joystick->last_key_idx = key_idx;
+        joystick->last_key_val = true;
+        joystick->key_state = key_idx;
+    } else {
+        joystick->last_key_idx = KEYPAD_NONE;
+        joystick->last_key_val = false;
+        joystick->key_state = KEYPAD_NONE;
+    }
+}
+
+static void process_joystick_event(struct joystick *joystick, struct js_event *event)
+{
+    int key_idx = KEYPAD_NONE;
+
+    switch (event->type & ~JS_EVENT_INIT) {
         case JS_EVENT_BUTTON:
-            switch (event.number) {
+            switch (event->number) {
                 case 8:
                     key_idx = KEYPAD_SELECT;
                     break;
@@ -385,7 +508,7 @@ bool read_joystick(struct joystick **joystick_ptr)
             }
             if (key_idx != KEYPAD_NONE) {
                 joystick->last_key_idx = key_idx;
-                joystick->last_key_val = !!event.value;
+                joystick->last_key_val = !!event->value;
                 if (joystick->last_key_val) {
                     joystick->key_state |= key_idx;
                 } else {
@@ -397,14 +520,14 @@ bool read_joystick(struct joystick **joystick_ptr)
             }
             break;
         case JS_EVENT_AXIS:
-            switch (event.number) {
+            switch (event->number) {
                 case 0:
-                    if (event.value <= -1024) {
+                    if (event->value <= -1024) {
                         joystick->last_key_idx = KEYPAD_LEFT;
                         joystick->last_key_val = true;
                         joystick->key_state |= KEYPAD_LEFT;
                         joystick->key_state &= ~KEYPAD_RIGHT;
-                    } else if (event.value >= 1024) {
+                    } else if (event->value >= 1024) {
                         joystick->last_key_idx = KEYPAD_RIGHT;
                         joystick->last_key_val = true;
                         joystick->key_state &= ~KEYPAD_LEFT;
@@ -423,12 +546,12 @@ bool read_joystick(struct joystick **joystick_ptr)
                     }
                     break;
                 case 1:
-                    if (event.value <= -1024) {
+                    if (event->value <= -1024) {
                         joystick->last_key_idx = KEYPAD_UP;
                         joystick->last_key_val = true;
                         joystick->key_state |= KEYPAD_UP;
                         joystick->key_state &= ~KEYPAD_DOWN;
-                    } else if (event.value >= 1024) {
+                    } else if (event->value >= 1024) {
                         joystick->last_key_idx = KEYPAD_DOWN;
                         joystick->last_key_val = true;
                         joystick->key_state &= ~KEYPAD_UP;
@@ -456,6 +579,51 @@ bool read_joystick(struct joystick **joystick_ptr)
             joystick->last_key_idx = KEYPAD_NONE;
             joystick->last_key_val = false;
             break;
+    }
+}
+
+bool read_joystick(struct joystick **joystick_ptr)
+{
+    size_t i;
+    struct joystick *joystick = NULL;
+    char key;
+    struct js_event event = { 0 };
+
+    udev_monitor_poll();
+
+    if (num_joysticks <= 0) {
+        *joystick_ptr = NULL;
+        return false;
+    }
+
+    for (i = 0; i < num_joysticks && ! joystick; i++) {
+        if (joysticks[i].fd == -1)
+            continue;
+
+        switch (joysticks[i].type) {
+            case INPUT_KEYBOARD:
+                if (read(STDIN_FILENO, &key, 1) == 1) {
+                    joystick = &joysticks[i];
+                    process_keyboard_input(joystick, key);
+                } else if (joysticks[i].last_key_val) {
+                    joystick = &joysticks[i];
+                    process_keyboard_input(joystick, '\0');
+                }
+                break;
+            case INPUT_JOYSTICK:
+                if (read(joysticks[i].fd, &event, sizeof(event)) == sizeof(event)) {
+                    joystick = &joysticks[i];
+                    process_joystick_event(joystick, &event);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (! joystick) {
+        *joystick_ptr = NULL;
+        return false;
     }
 
     if (joystick->last_key_idx != KEYPAD_NONE && joystick->last_key_val) {

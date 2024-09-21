@@ -60,6 +60,9 @@ static inline void set_pixel(char *screen, int y, int x, unsigned int color)
     screen[(((y * GRID_WIDTH) + x)*3) + 2] = b;
 }
 
+#define INPUT_KEYBOARD  0
+#define INPUT_JOYSTICK  1
+
 // Keys
 #define KEYPAD_NONE     0
 #define KEYPAD_LEFT     (1 << 0)
@@ -75,6 +78,7 @@ static inline void set_pixel(char *screen, int y, int x, unsigned int color)
 #define KEY_HISTORY_SIZE 16
 
 struct joystick {
+    int type;
     int fd;
     char devnode[PATH_MAX];
     dev_t dev;
@@ -132,6 +136,7 @@ extern void mdns_init(void);
 extern void input_reset(void);
 extern void init_joystick(const char *devnode);
 extern void init_udev_hotplug(void);
+extern void init_keyboard(void);
 extern bool read_joystick(struct joystick **joystick_ptr);
 extern int count_joysticks(void);
 extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_t seq_length);

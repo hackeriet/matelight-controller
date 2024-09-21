@@ -22,6 +22,7 @@ static int wled_port = 21324;
 static char *mdns_description = NULL;
 static char *joypad_dev = NULL;
 static bool joypad_udev = false;
+static bool keyboard = false;
 static int start_game = -1;
 static bool start_on_startup = false;
 static bool mqtt = false;
@@ -310,6 +311,7 @@ static void usage(void)
     fprintf(stderr, "  -m, --mdns-description\tWLED MDNS description\n");
     fprintf(stderr, "  -j, --joystick-device\t\tjoystick device\n");
     fprintf(stderr, "  -u, --udev-hotplug\t\thotpluggable joystick devices\n");
+    fprintf(stderr, "  -k, --keyboard\t\tkeyboard input\n");
     fprintf(stderr, "  -g, --game\t\t\tgame name\n");
     fprintf(stderr, "  -S, --start\t\t\tstart game on startup\n");
     fprintf(stderr, "  -M, --mqtt\t\t\tenable MQTT\n");
@@ -323,6 +325,7 @@ static struct option long_options[] = {
     {"mdns-description",    required_argument,  NULL,   'm'},
     {"joystick-device",     required_argument,  NULL,   'j'},
     {"udev-hotplug",        no_argument,        NULL,   'u'},
+    {"keyboard",            no_argument,        NULL,   'k'},
     {"game",                required_argument,  NULL,   'g'},
     {"start",               no_argument,        NULL,   'S'},
     {"mqtt",                no_argument,        NULL,   'M'},
@@ -336,7 +339,7 @@ int main(int argc, char *argv[])
     size_t i;
 
     for (;;) {
-        c = getopt_long(argc, argv, "a:p:m:j:ug:SMh", long_options, NULL);
+        c = getopt_long(argc, argv, "a:p:m:j:ukg:SMh", long_options, NULL);
         if (c == -1)
             break;
 
@@ -360,6 +363,10 @@ int main(int argc, char *argv[])
 
             case 'u':
                 joypad_udev = true;
+                break;
+
+            case 'k':
+                keyboard = true;
                 break;
 
             case 'g':
@@ -395,10 +402,10 @@ int main(int argc, char *argv[])
     if (! address && ! mdns_description)
         usage();
 
-    if (joypad_dev && joypad_udev)
+    if ((joypad_dev && joypad_udev) || (joypad_dev && keyboard) || (joypad_udev && keyboard))
         usage();
 
-    if (! joypad_dev && ! joypad_udev)
+    if (! joypad_dev && ! joypad_udev && ! keyboard)
         usage();
 
     fprintf(stderr, "starting matelight controller\n");
@@ -428,6 +435,8 @@ int main(int argc, char *argv[])
         init_joystick(joypad_dev);
     } else if (joypad_udev) {
         init_udev_hotplug();
+    } else {
+        init_keyboard();
     }
     joystick_cnt = count_joysticks();
 
