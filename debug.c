@@ -10,14 +10,15 @@
 #define MODE_GAME       0
 #define MODE_DEAD       1
 
-#define MAX_PLAYERS     ((GRID_HEIGHT - 1) / 4)
+#define MAX_PLAYERS     ((grid_height - 1) / 4)
+#define MAX_MAX_PLAYERS ((MAX_GRID_HEIGHT - 1) / 4)
 
 #define TIMEOUT_TICKS   50 /* 5 secs */
 
 static int game_mode = MODE_DEAD;
 static int tick_count = 0;
 static int last_key_press = 0;
-static int key_states[MAX_PLAYERS] = { 0 };
+static int key_states[MAX_MAX_PLAYERS] = { 0 };
 
 static void setup_game(bool start)
 {
@@ -69,8 +70,8 @@ static void draw(char *screen)
     int key_state;
 
     // background
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
         }
     }
@@ -82,7 +83,7 @@ static void draw(char *screen)
         key_state = key_states[player_idx];
 
         for (y = (player_idx * 4) + 1; y < ((player_idx * 4) + 4); y++) {
-            for (x = 0; x < GRID_WIDTH; x++) {
+            for (x = 0; x < grid_width; x++) {
                 set_pixel(screen, y, x, COLOR_RGB(128, 128, 128));
             }
         }
@@ -98,9 +99,9 @@ static void draw(char *screen)
     }
 
     // footer
-    set_pixel(screen, GRID_HEIGHT - 1, ((tick_count / 2) + 0) % GRID_WIDTH, COLOR_RGB(255, 0, 0));
-    set_pixel(screen, GRID_HEIGHT - 1, ((tick_count / 2) + 1) % GRID_WIDTH, COLOR_RGB(0, 255, 0));
-    set_pixel(screen, GRID_HEIGHT - 1, ((tick_count / 2) + 2) % GRID_WIDTH, COLOR_RGB(0, 0, 255));
+    set_pixel(screen, grid_height - 1, ((tick_count / 2) + 0) % grid_width, COLOR_RGB(255, 0, 0));
+    set_pixel(screen, grid_height - 1, ((tick_count / 2) + 1) % grid_width, COLOR_RGB(0, 255, 0));
+    set_pixel(screen, grid_height - 1, ((tick_count / 2) + 2) % grid_width, COLOR_RGB(0, 0, 255));
 }
 
 static void render(bool *display, char *screen)

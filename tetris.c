@@ -12,8 +12,8 @@
 #define MODE_GAME               0
 #define MODE_DEAD               1
 
-#define TETRIS_WIDTH            GRID_WIDTH
-#define TETRIS_HEIGHT           (GRID_HEIGHT + 2)
+#define TETRIS_WIDTH            grid_width
+#define TETRIS_HEIGHT           (grid_height + 2)
 #define TETRIS_VISIBLE_HEIGHT   (TETRIS_HEIGHT - 2)
 #define TETRIS_BLOCK_START_Y    TETRIS_VISIBLE_HEIGHT
 #define TETRIS_NUM_BRICKS       7
@@ -247,7 +247,7 @@ static const struct tetris_block_rotations tetris_blocks_rotations[TETRIS_NUM_BR
     }
 };
 
-typedef int tetris_field[TETRIS_WIDTH][TETRIS_HEIGHT];
+typedef int tetris_field[MAX_GRID_SIZE];
 
 struct tetris {
     tetris_field field;
@@ -279,7 +279,7 @@ static void setup_game(bool start)
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
-            tetris->field[x][y] = 0;
+            tetris->field[(y * TETRIS_WIDTH) + x] = 0;
         }
     }
 
@@ -311,8 +311,8 @@ static void field_apply(tetris_field field1, tetris_field field2)
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
-            if (field2[x][y])
-                field1[x][y] = field2[x][y];
+            if (field2[(y * TETRIS_WIDTH) + x])
+                field1[(y * TETRIS_WIDTH) + x] = field2[(y * TETRIS_WIDTH) + x];
         }
     }
 }
@@ -327,7 +327,7 @@ static void write_block(tetris_field field, int i, int r, int x, int y)
             int tx = x + px;
             int ty = y + py;
             if (v && tx >= 0 && tx < TETRIS_WIDTH && ty >= 0 && ty < TETRIS_HEIGHT)
-                field[tx][ty] = (i + 1);
+                field[(ty * TETRIS_WIDTH) + tx] = (i + 1);
         }
     }
 }
@@ -335,7 +335,7 @@ static void write_block(tetris_field field, int i, int r, int x, int y)
 static bool valid_block(tetris_field tstfield, int i, int r, int x, int y)
 {
     int px, py;
-    tetris_field curblock = { { 0 } };
+    tetris_field curblock = { 0 };
 
     for (px = 0; px < 4; ++px) {
         for (py = 0; py < 4; ++py) {
@@ -354,8 +354,8 @@ static bool valid_block(tetris_field tstfield, int i, int r, int x, int y)
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
-            if (! curblock[x][y]) continue;
-            if (tstfield[x][y]) return false;
+            if (! curblock[(y * TETRIS_WIDTH) + x]) continue;
+            if (tstfield[(y * TETRIS_WIDTH) + x]) return false;
         }
     }
 
@@ -366,18 +366,18 @@ static bool block_landed(void)
 {
     int x, y;
 
-    tetris_field curblock = { { 0 } };
+    tetris_field curblock = { 0 };
 
     write_block(curblock, tetris->curblock, tetris->rotation, tetris->curblock_x, tetris->curblock_y);
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
-        if (curblock[x][0]) return true;
+        if (curblock[(0 * TETRIS_WIDTH) + x]) return true;
     }
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
-            if (! tetris->field[x][y]) continue;
-            if (curblock[x][y + 1]) return true;
+            if (! tetris->field[(y * TETRIS_WIDTH) + x]) continue;
+            if (curblock[((y + 1) * TETRIS_WIDTH) + x]) return true;
         }
     }
 
@@ -388,14 +388,14 @@ static bool block_crashed(void)
 {
     int x, y;
 
-    tetris_field curblock = { { 0 } };
+    tetris_field curblock = { 0 };
 
     write_block(curblock, tetris->curblock, tetris->rotation, tetris->curblock_x, tetris->curblock_y);
 
     for (x = 0; x < TETRIS_WIDTH; ++x) {
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
-            if (! tetris->field[x][y]) continue;
-            if (curblock[x][y]) return true;
+            if (! tetris->field[(y * TETRIS_WIDTH) + x]) continue;
+            if (curblock[(y * TETRIS_WIDTH) + x]) return true;
         }
     }
 
@@ -412,7 +412,7 @@ static int check_tetris(void)
         for (y = 0; y < TETRIS_HEIGHT; ++y) {
             bool allright = true;
             for (x = 0; x < TETRIS_WIDTH; ++x) {
-                if (! tetris->field[x][y]) allright = false;
+                if (! tetris->field[(y * TETRIS_WIDTH) + x]) allright = false;
             }
             if (allright) goto doit;
         }
@@ -423,12 +423,12 @@ static int check_tetris(void)
 
         for (; y < (TETRIS_HEIGHT - 1); ++y) {
             for (x = 0; x < TETRIS_WIDTH; ++x) {
-                tetris->field[x][y] = tetris->field[x][y + 1];
+                tetris->field[(y * TETRIS_WIDTH) + x] = tetris->field[((y + 1) * TETRIS_WIDTH) + x];
             }
         }
 
         for (x = 0; x < TETRIS_WIDTH; ++x)
-            tetris->field[x][TETRIS_HEIGHT - 1] = 0;
+            tetris->field[((TETRIS_HEIGHT - 1) * TETRIS_WIDTH) + x] = 0;
     }
 
     return ret;
@@ -487,7 +487,7 @@ static bool doit(void)
 
     if (time_val >= tetris->next_update) {
         if (block_landed()) {
-            tetris_field curblock = { { 0 } };
+            tetris_field curblock = { 0 };
             int nt;
 
             write_block(curblock, tetris->curblock, tetris->rotation, tetris->curblock_x, tetris->curblock_y);
@@ -530,11 +530,11 @@ static void draw(char *screen)
 {
     int x, y;
 
-    tetris_field field = { { 0 } };
-    tetris_field curblock = { { 0 } };
+    tetris_field field = { 0 };
+    tetris_field curblock = { 0 };
 
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
         }
     }
@@ -549,10 +549,10 @@ static void draw(char *screen)
             unsigned int color;
             int v;
 
-            v = field[x][y];
+            v = field[(y * TETRIS_WIDTH) + x];
             if (v) {
                 color = tetris_block_colors[v - 1];
-                set_pixel(screen, (GRID_HEIGHT - y) - 1, x, color);
+                set_pixel(screen, (grid_height - y) - 1, x, color);
             }
         }
     }

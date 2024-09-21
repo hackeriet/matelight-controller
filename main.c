@@ -17,6 +17,8 @@
 
 #include "matelight.h"
 
+int grid_width = DEFAULT_GRID_WIDTH;
+int grid_height = DEFAULT_GRID_HEIGHT;
 static char *address = NULL;
 static int wled_port = 21324;
 static char *mdns_description = NULL;
@@ -41,7 +43,10 @@ static double last_tick_val = 0.0;
 int ticks = 0;
 
 static bool display = false;
-static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
+//static char udp_data[65536];
+static char udp_data[2 + (MAX_GRID_SIZE * 3)] = { 0 };
+
+#define UDP_DATA_SIZE (2 + (grid_width * grid_height * 3))
 
 static const struct game *games[] = {
     &debug_game,
@@ -307,6 +312,8 @@ static void usage(void)
 {
     fprintf(stderr, "Usage: matelight [options]\n");
     fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -W, --width\t\t\tgrid witdh\n");
+    fprintf(stderr, "  -H, --height\t\t\tgrid height\n");
     fprintf(stderr, "  -a, --address\t\t\tWLED address\n");
     fprintf(stderr, "  -p, --port\t\t\tWLED port\n");
     fprintf(stderr, "  -m, --mdns-description\tWLED MDNS description\n");
@@ -322,6 +329,8 @@ static void usage(void)
 }
 
 static struct option long_options[] = {
+    {"width",               required_argument,  NULL,   'W'},
+    {"height",              required_argument,  NULL,   'H'},
     {"address",             required_argument,  NULL,   'a'},
     {"port",                required_argument,  NULL,   'p'},
     {"mdns-description",    required_argument,  NULL,   'm'},
@@ -342,11 +351,21 @@ int main(int argc, char *argv[])
     size_t i;
 
     for (;;) {
-        c = getopt_long(argc, argv, "a:p:m:j:ukg:dSMh", long_options, NULL);
+        c = getopt_long(argc, argv, "W:H:a:p:m:j:ukg:dSMh", long_options, NULL);
         if (c == -1)
             break;
 
         switch (c) {
+            case 'W':
+                grid_width = atoi(optarg);
+                if (grid_width < MIN_GRID_WIDTH || grid_width > MAX_GRID_WIDTH) usage();
+                break;
+
+            case 'H':
+                grid_height = atoi(optarg);
+                if (grid_height < MIN_GRID_HEIGHT || grid_height > MAX_GRID_HEIGHT) usage();
+                break;
+
             case 'a':
                 address = optarg;
                 break;
@@ -511,7 +530,7 @@ int main(int argc, char *argv[])
         }
         if (display) {
             if (udp_sockaddr.ss_family != AF_UNSPEC) {
-                (void)sendto(udp_fd, udp_data, sizeof(udp_data), 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
+                (void)sendto(udp_fd, udp_data, UDP_DATA_SIZE, 0, (struct sockaddr *)&udp_sockaddr, sizeof(udp_sockaddr));
             }
         }
 

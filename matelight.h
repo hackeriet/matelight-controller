@@ -12,14 +12,26 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 // Grid
-#define GRID_WIDTH      10
-#define GRID_HEIGHT     20
+#define DEFAULT_GRID_WIDTH  10
+#define DEFAULT_GRID_HEIGHT 20
+//#define DEFAULT_GRID_WIDTH  20
+//#define DEFAULT_GRID_HEIGHT 12
+
+#define MIN_GRID_WIDTH  10
+#define MAX_GRID_WIDTH  20
+#define MIN_GRID_HEIGHT 10
+#define MAX_GRID_HEIGHT 20
 
 // WLED
 #define WLED_WARLS      1
 #define WLED_DRGB       2
 #define WLED_DRGBW      3
 #define WLED_DNRGB      4
+
+// 490 is the maximum number of LEDs which can fit into 1472 bytes which is the max size of an unfragmented UDP datagram over IPv4 on 1500 MTU Ethernet
+#define WLED_DRGB_MAX_LEDS  490
+
+#define MAX_GRID_SIZE       MAX(WLED_DRGB_MAX_LEDS, (MAX_GRID_WIDTH * MAX_GRID_HEIGHT))
 
 // Display
 #define DISPLAY_TIMEOUT 3
@@ -47,18 +59,6 @@
 
 // Other colors
 #define COLOR_ORANGE            COLOR_RGB(0xff, 0x7f, 0x00)
-
-// Set pixel
-static inline void set_pixel(char *screen, int y, int x, unsigned int color)
-{
-    unsigned char r = (color >> 16) & 0xff;
-    unsigned char g = (color >> 8) & 0xff;
-    unsigned char b = color & 0xff;
-
-    screen[(((y * GRID_WIDTH) + x)*3) + 0] = r;
-    screen[(((y * GRID_WIDTH) + x)*3) + 1] = g;
-    screen[(((y * GRID_WIDTH) + x)*3) + 2] = b;
-}
 
 #define INPUT_KEYBOARD  0
 #define INPUT_JOYSTICK  1
@@ -109,6 +109,9 @@ struct game {
     bool (*idle_func)(void);
 };
 
+extern int grid_width;
+extern int grid_height;
+
 extern double time_val;
 extern int ticks;
 
@@ -143,5 +146,17 @@ extern bool joystick_is_key_seq(struct joystick *joystick, const int *seq, size_
 extern bool has_player(int player);
 extern void mqtt_init(void);
 extern bool wled_api_check(const char *addr);
+
+// Set pixel
+static inline void set_pixel(char *screen, int y, int x, unsigned int color)
+{
+    unsigned char r = (color >> 16) & 0xff;
+    unsigned char g = (color >> 8) & 0xff;
+    unsigned char b = color & 0xff;
+
+    screen[(((y * grid_width) + x)*3) + 0] = r;
+    screen[(((y * grid_width) + x)*3) + 1] = g;
+    screen[(((y * grid_width) + x)*3) + 2] = b;
+}
 
 #endif /* MATELIGHT_H */

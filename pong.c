@@ -15,7 +15,7 @@
 #define PADDLE_LOW              1
 #define PADDLE_WIDTH            4
 #define PADDLE_HIGH_Y           1
-#define PADDLE_LOW_Y            (GRID_HEIGHT - 2)
+#define PADDLE_LOW_Y            (grid_height - 2)
 #define MOVE_NONE               0
 #define MOVE_LEFT               -1
 #define MOVE_RIGHT              1
@@ -26,13 +26,13 @@
 static int game_mode = MODE_DEAD;
 static bool game_pause = false;
 
-static int paddle_high_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+static int paddle_high_x = 0;
 static int paddle_high_dir = MOVE_NONE;
-static int paddle_low_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+static int paddle_low_x = 0;
 static int paddle_low_dir = MOVE_NONE;
 
-static double ball_y = (double)(GRID_HEIGHT / 2);
-static double ball_x = (double)(GRID_WIDTH / 2);
+static double ball_y = 0.0;
+static double ball_x = 0.0;
 static double ball_dir = DIR_DOWN;
 
 static void setup_game(bool start)
@@ -40,13 +40,13 @@ static void setup_game(bool start)
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = false;
 
-    paddle_high_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+    paddle_high_x = (grid_width / 2) - (PADDLE_WIDTH / 2);
     paddle_high_dir = MOVE_NONE;
-    paddle_low_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+    paddle_low_x = (grid_width / 2) - (PADDLE_WIDTH / 2);
     paddle_low_dir = MOVE_NONE;
 
-    ball_y = (double)(GRID_HEIGHT / 2);
-    ball_x = (double)(GRID_WIDTH / 2);
+    ball_y = (double)(grid_height / 2);
+    ball_x = (double)(grid_width / 2);
     ball_dir = DIR_DOWN;
 }
 
@@ -70,19 +70,19 @@ static bool doit(void)
     /* move high paddle */
     paddle_high_x += paddle_high_dir;
     if (paddle_high_x < 0) paddle_high_x = 0;
-    if (paddle_high_x > (GRID_WIDTH - PADDLE_WIDTH)) paddle_high_x = GRID_WIDTH - PADDLE_WIDTH;
+    if (paddle_high_x > (grid_width - PADDLE_WIDTH)) paddle_high_x = grid_width - PADDLE_WIDTH;
 
     /* move low paddle */
     paddle_low_x += paddle_low_dir;
     if (paddle_low_x < 0) paddle_low_x = 0;
-    if (paddle_low_x > (GRID_WIDTH - PADDLE_WIDTH)) paddle_low_x = GRID_WIDTH - PADDLE_WIDTH;
+    if (paddle_low_x > (grid_width - PADDLE_WIDTH)) paddle_low_x = grid_width - PADDLE_WIDTH;
 
     /* move ball */
     ball_x += cos(ball_dir);
     ball_y += sin(ball_dir);
 
     /* check if ball is outside grid */
-    if (ball_y < 0.0 || ball_y >= (double)GRID_HEIGHT) {
+    if (ball_y < 0.0 || ball_y >= (double)grid_height) {
         ball_y = -1.0;
         ball_x = -1.0;
         return false;
@@ -127,9 +127,9 @@ static bool doit(void)
     }
 
     /* check ball/right wall collision */
-    if (ball_x >= (double)GRID_WIDTH) {
+    if (ball_x >= (double)grid_width) {
         ball_dir = atan2(sin(ball_dir), cos(ball_dir) * -1.0);
-        ball_x = (double)(GRID_WIDTH - 1);
+        ball_x = (double)(grid_width - 1);
     }
 
     return true;
@@ -220,8 +220,8 @@ static void draw(char *screen)
     int x, y;
 
     // background
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
         }
     }
@@ -239,7 +239,7 @@ static void draw(char *screen)
     // ball
     y = lround(ball_y);
     x = lround(ball_x);
-    if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
+    if (y >= 0 && y < grid_height && x >= 0 && x < grid_width) {
         set_pixel(screen, y, x, COLOR_BLUE);
     }
 }

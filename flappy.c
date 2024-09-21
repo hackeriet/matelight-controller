@@ -9,20 +9,21 @@
 
 #define MODE_GAME               0
 #define MODE_DEAD               1
-#define NUM_PIPES               (GRID_WIDTH / 3)
+#define NUM_PIPES               (grid_width / 3)
+#define MAX_NUM_PIPES           (MAX_GRID_WIDTH / 3)
 #define PIPE_WIDTH              2
 #define PIPE_SEPARATOR          7
 #define FLOOR_HEIGHT            2
 #define BIRD_X                  2
-#define START_OFFSET            GRID_WIDTH
+#define START_OFFSET            grid_width
 
 static int game_mode = MODE_DEAD;
 static int game_pause = false;
 static int button = 0;
-static int bird_y = 10;
-static int pipes_high[NUM_PIPES] = { 0 };
-static int pipes_low[NUM_PIPES] = { 0 };
-static int pipes_off = START_OFFSET;
+static int bird_y = 0;
+static int pipes_high[MAX_NUM_PIPES] = { 0 };
+static int pipes_low[MAX_NUM_PIPES] = { 0 };
+static int pipes_off = 0;
 
 static void setup_game(bool start)
 {
@@ -31,9 +32,9 @@ static void setup_game(bool start)
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = false;
     button = 0;
-    bird_y = (GRID_HEIGHT / 2);
+    bird_y = (grid_height / 2);
     for (i = 0; i < NUM_PIPES; i++) {
-        r = rand() % ((GRID_HEIGHT - FLOOR_HEIGHT) - 10);
+        r = rand() % ((grid_height - FLOOR_HEIGHT) - 10);
         pipes_high[i] = 2 + r;
         pipes_low[i] = 2 + r + 8;
     }
@@ -71,8 +72,8 @@ static bool doit(void)
     while (bird_y < 0) {
         bird_y++;
     }
-    if ((bird_y + 1) >= (GRID_HEIGHT - FLOOR_HEIGHT)) {
-        while ((bird_y + 1) >= GRID_HEIGHT) {
+    if ((bird_y + 1) >= (grid_height - FLOOR_HEIGHT)) {
+        while ((bird_y + 1) >= grid_height) {
             bird_y--;
         }
         return false;
@@ -84,7 +85,7 @@ static bool doit(void)
         memmove(pipes_high, &pipes_high[1], sizeof(pipes_high[0]) * (NUM_PIPES - 1));
         memmove(pipes_low, &pipes_low[1], sizeof(pipes_low[0]) * (NUM_PIPES - 1));
         pipes_off += (PIPE_WIDTH + PIPE_SEPARATOR);
-        r = rand() % ((GRID_HEIGHT - FLOOR_HEIGHT) - 10);
+        r = rand() % ((grid_height - FLOOR_HEIGHT) - 10);
         pipes_high[NUM_PIPES - 1] = 2 + r;
         pipes_low[NUM_PIPES - 1] = 2 + r + 8;
     }
@@ -159,9 +160,9 @@ static void draw(char *screen)
     int pipe_idx;
 
     // background and floor
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            if (y < (GRID_HEIGHT - FLOOR_HEIGHT)) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
+            if (y < (grid_height - FLOOR_HEIGHT)) {
                 set_pixel(screen, y, x, COLOR_BLUE);
             } else {
                 set_pixel(screen, y, x, 0x964b00);
@@ -173,14 +174,14 @@ static void draw(char *screen)
     for (pipe_idx = 0; pipe_idx < NUM_PIPES; pipe_idx++) {
         for (ix = 0; ix < PIPE_WIDTH; ix++) {
             x = pipes_off + (pipe_idx * (PIPE_WIDTH + PIPE_SEPARATOR)) + ix;
-            if (x >= 0 && x < GRID_WIDTH) {
+            if (x >= 0 && x < grid_width) {
                 for (y = 0; y < pipes_high[pipe_idx]; y++) {
                     set_pixel(screen, y, x, 0x1fd655);
                 }
                 set_pixel(screen, pipes_high[pipe_idx], x, 0x83f28f);
 
                 set_pixel(screen, pipes_low[pipe_idx], x, 0x83f28f);
-                for (y = pipes_low[pipe_idx] + 1; y < (GRID_HEIGHT - FLOOR_HEIGHT); y++) {
+                for (y = pipes_low[pipe_idx] + 1; y < (grid_height - FLOOR_HEIGHT); y++) {
                     set_pixel(screen, y, x, 0x1fd655);
                 }
             }

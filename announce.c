@@ -139,7 +139,7 @@ static void tick(void)
 {
     tick_count++;
 
-    announce_pos = -GRID_HEIGHT + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
+    announce_pos = -grid_height + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
 
     if (announce_pos > ((int)announce_wlen*FONT_SIZE)) {
         game_mode = MODE_DEAD;
@@ -202,7 +202,7 @@ static void draw(char *screen)
     const char *glyph;
     bool pix;
 
-    for (y = 0; y < GRID_HEIGHT; y++) {
+    for (y = 0; y < grid_height; y++) {
         font_idx = (announce_pos + y) / FONT_SIZE;
         font_off = (announce_pos + y) % FONT_SIZE;
         if (font_idx >= 0 && font_idx < (int)announce_wlen) {
@@ -212,10 +212,10 @@ static void draw(char *screen)
         }
         glyph = get_font8x8(ch);
 
-        for (x = 0; x < GRID_WIDTH; x++) {
+        for (x = 0; x < grid_width; x++) {
             pix = false;
-            if (x >= ((GRID_WIDTH - FONT_SIZE) / 2) && x < FONT_SIZE + ((GRID_WIDTH - FONT_SIZE) / 2)) {
-                pix = get_glyph_pix(glyph, font_off, x - ((GRID_WIDTH - FONT_SIZE) / 2), announce_rotate);
+            if (x >= ((grid_width - FONT_SIZE) / 2) && x < FONT_SIZE + ((grid_width - FONT_SIZE) / 2)) {
+                pix = get_glyph_pix(glyph, font_off, x - ((grid_width - FONT_SIZE) / 2), announce_rotate);
             }
             if (pix) {
                 set_pixel(screen, y, x, announce_color);

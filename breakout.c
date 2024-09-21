@@ -13,7 +13,7 @@
 #define MODE_DEAD               1
 
 #define PADDLE_WIDTH            4
-#define PADDLE_Y                (GRID_HEIGHT - 2)
+#define PADDLE_Y                (grid_height - 2)
 #define MOVE_NONE               0
 #define MOVE_LEFT               -1
 #define MOVE_RIGHT              1
@@ -27,16 +27,16 @@
 static int game_mode = MODE_DEAD;
 static bool game_pause = false;
 
-static int paddle_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+static int paddle_x = 0;
 static int paddle_dir = MOVE_NONE;
 
-static double ball_y = (double)(GRID_HEIGHT / 2);
-static double ball_x = (double)(GRID_WIDTH / 2);
+static double ball_y = 0.0;
+static double ball_x = 0.0;
 static double ball_dir = DIR_DOWN;
 
-static uint8_t bricks[BRICK_ROWS * GRID_WIDTH] = { 0 };
+static uint8_t bricks[BRICK_ROWS * MAX_GRID_WIDTH] = { 0 };
 static size_t num_bricks = 0;
-static uint32_t brick_colors[BRICK_ROWS * GRID_WIDTH] = { 0 };
+static uint32_t brick_colors[BRICK_ROWS * MAX_GRID_WIDTH] = { 0 };
 
 static const uint32_t brick_row_colors[BRICK_ROWS] = {
     /* pride */
@@ -55,19 +55,19 @@ static void setup_game(bool start)
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = false;
 
-    paddle_x = (GRID_WIDTH / 2) - (PADDLE_WIDTH / 2);
+    paddle_x = (grid_width / 2) - (PADDLE_WIDTH / 2);
     paddle_dir = MOVE_NONE;
 
-    ball_y = (double)(GRID_HEIGHT / 2);
-    ball_x = (double)(GRID_WIDTH / 2);
+    ball_y = (double)(grid_height / 2);
+    ball_x = (double)(grid_width / 2);
     ball_dir = DIR_DOWN;
     num_bricks = 0;
 
     for (y = 0; y < BRICK_ROWS; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            bricks[(y * GRID_WIDTH) + x] = 1;
+        for (x = 0; x < grid_width; x++) {
+            bricks[(y * grid_width) + x] = 1;
             num_bricks++;
-            brick_colors[(y * GRID_WIDTH) + x] = brick_row_colors[y];
+            brick_colors[(y * grid_width) + x] = brick_row_colors[y];
         }
     }
 }
@@ -93,14 +93,14 @@ static bool doit(void)
     /* move paddle */
     paddle_x += paddle_dir;
     if (paddle_x < 0) paddle_x = 0;
-    if (paddle_x > (GRID_WIDTH - PADDLE_WIDTH)) paddle_x = GRID_WIDTH - PADDLE_WIDTH;
+    if (paddle_x > (grid_width - PADDLE_WIDTH)) paddle_x = grid_width - PADDLE_WIDTH;
 
     /* move ball */
     ball_x += cos(ball_dir);
     ball_y += sin(ball_dir);
 
     /* check if ball is outside grid */
-    if (ball_y >= (double)GRID_HEIGHT) {
+    if (ball_y >= (double)grid_height) {
         ball_y = -1.0;
         ball_x = -1.0;
         return false;
@@ -127,8 +127,8 @@ static bool doit(void)
         ball_yi = lround(floor(ball_y)) - BRICK_START_ROW;
         ball_xi = lround(floor(ball_x));
 
-        if (bricks[(ball_yi * GRID_WIDTH) + ball_xi]) {
-            bricks[(ball_yi * GRID_WIDTH) + ball_xi] = 0;
+        if (bricks[(ball_yi * grid_width) + ball_xi]) {
+            bricks[(ball_yi * grid_width) + ball_xi] = 0;
             if (num_bricks > 0)
                 num_bricks--;
             ball_dir = atan2(sin(ball_dir) * -1, cos(ball_dir));
@@ -154,9 +154,9 @@ static bool doit(void)
     }
 
     /* check ball/right wall collision */
-    if (ball_x >= (double)GRID_WIDTH) {
+    if (ball_x >= (double)grid_width) {
         ball_dir = atan2(sin(ball_dir), cos(ball_dir) * -1.0);
-        ball_x = (double)(GRID_WIDTH - 1);
+        ball_x = (double)(grid_width - 1);
     }
 
     return true;
@@ -222,17 +222,17 @@ static void draw(char *screen)
     int x, y;
 
     // background
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
         }
     }
 
     // bricks
     for (y = 0; y < BRICK_ROWS; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            if (bricks[(y * GRID_WIDTH) + x]) {
-                set_pixel(screen, y + BRICK_START_ROW, x, brick_colors[(y * GRID_WIDTH) + x]);
+        for (x = 0; x < grid_width; x++) {
+            if (bricks[(y * grid_width) + x]) {
+                set_pixel(screen, y + BRICK_START_ROW, x, brick_colors[(y * grid_width) + x]);
             }
         }
     }
@@ -245,7 +245,7 @@ static void draw(char *screen)
     // ball
     y = lround(ball_y);
     x = lround(ball_x);
-    if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
+    if (y >= 0 && y < grid_height && x >= 0 && x < grid_width) {
         set_pixel(screen, y, x, COLOR_BLUE);
     }
 }

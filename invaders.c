@@ -12,7 +12,7 @@
 #define MODE_DEAD               1
 
 #define SHOOTER_WIDTH           3
-#define SHOOTER_Y               (GRID_HEIGHT - 2)
+#define SHOOTER_Y               (grid_height - 2)
 #define MOVE_NONE               0
 #define MOVE_LEFT               -1
 #define MOVE_RIGHT              1
@@ -28,12 +28,12 @@ static int game_mode = MODE_DEAD;
 static bool game_pause = false;
 static int tick_count = 0;
 
-static int shooter_x = (GRID_WIDTH / 2) - (SHOOTER_WIDTH / 2);
+static int shooter_x = 0.0;
 static int shooter_dir = MOVE_NONE;
 
-static uint8_t invaders[INVADERS_ROWS * GRID_WIDTH] = { 0 };
+static uint8_t invaders[INVADERS_ROWS * MAX_GRID_WIDTH] = { 0 };
 static size_t num_invaders = 0;
-static uint32_t invaders_colors[INVADERS_ROWS * GRID_WIDTH] = { 0 };
+static uint32_t invaders_colors[INVADERS_ROWS * MAX_GRID_WIDTH] = { 0 };
 static int invaders_y = INVADERS_START_ROW;
 static int invaders_dir = MOVE_RIGHT;
 
@@ -72,7 +72,7 @@ static void setup_game(bool start)
     game_pause = false;
     tick_count = 0;
 
-    shooter_x = (GRID_WIDTH / 2) - (SHOOTER_WIDTH / 2);
+    shooter_x = (grid_width / 2) - (SHOOTER_WIDTH / 2);
     shooter_dir = MOVE_NONE;
 
     num_invaders = 0;
@@ -80,18 +80,18 @@ static void setup_game(bool start)
     invaders_dir = MOVE_RIGHT;
 
     for (y = 0; y < INVADERS_ROWS; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            invaders[(y * GRID_WIDTH) + x] = 0;
-            invaders_colors[(y * GRID_WIDTH) + x] = 0;
+        for (x = 0; x < grid_width; x++) {
+            invaders[(y * grid_width) + x] = 0;
+            invaders_colors[(y * grid_width) + x] = 0;
         }
     }
 
     for (y = 0; y < INVADERS_ROWS; y++) {
         for (x = 0; x < INVADERS_COLS; x++) {
             if (invader[y][x] == '#') {
-                invaders[(y * GRID_WIDTH) + ((GRID_WIDTH - INVADERS_COLS) / 2) + x] = 1;
+                invaders[(y * grid_width) + ((grid_width - INVADERS_COLS) / 2) + x] = 1;
                 num_invaders++;
-                invaders_colors[(y * GRID_WIDTH) + ((GRID_WIDTH - INVADERS_COLS) / 2) + x] = rnd_color;
+                invaders_colors[(y * grid_width) + ((grid_width - INVADERS_COLS) / 2) + x] = rnd_color;
             }
         }
     }
@@ -126,21 +126,21 @@ static bool doit(void)
     /* move shooter */
     shooter_x += shooter_dir;
     if (shooter_x < 0) shooter_x = 0;
-    if (shooter_x > (GRID_WIDTH - SHOOTER_WIDTH)) shooter_x = GRID_WIDTH - SHOOTER_WIDTH;
+    if (shooter_x > (grid_width - SHOOTER_WIDTH)) shooter_x = grid_width - SHOOTER_WIDTH;
 
     if ((tick_count % INVADERS_X_SPEED) == 0) {
         /* turn invaders */
         turn = false;
         if (invaders_dir == MOVE_LEFT) {
             for (y = 0; y < INVADERS_ROWS; y++) {
-                if (invaders[(y * GRID_WIDTH) + 0]) {
+                if (invaders[(y * grid_width) + 0]) {
                     turn = true;
                     break;
                 }
             }
         } else if (invaders_dir == MOVE_RIGHT) {
             for (y = 0; y < INVADERS_ROWS; y++) {
-                if (invaders[(y * GRID_WIDTH) + (GRID_WIDTH - 1)]) {
+                if (invaders[(y * grid_width) + (grid_width - 1)]) {
                     turn = true;
                     break;
                 }
@@ -152,17 +152,17 @@ static bool doit(void)
         /* move invaders */
         if (invaders_dir == MOVE_LEFT) {
             for (y = 0; y < INVADERS_ROWS; y++) {
-                memmove(&invaders[(y * GRID_WIDTH) + 0], &invaders[(y * GRID_WIDTH) + 1], sizeof(*invaders) * (GRID_WIDTH - 1));
-                invaders[(y * GRID_WIDTH) + (GRID_WIDTH - 1)] = 0;
-                memmove(&invaders_colors[(y * GRID_WIDTH) + 0], &invaders_colors[(y * GRID_WIDTH) + 1], sizeof(*invaders_colors) * (GRID_WIDTH - 1));
-                invaders_colors[(y * GRID_WIDTH) + (GRID_WIDTH - 1)] = 0;
+                memmove(&invaders[(y * grid_width) + 0], &invaders[(y * grid_width) + 1], sizeof(*invaders) * (grid_width - 1));
+                invaders[(y * grid_width) + (grid_width - 1)] = 0;
+                memmove(&invaders_colors[(y * grid_width) + 0], &invaders_colors[(y * grid_width) + 1], sizeof(*invaders_colors) * (grid_width - 1));
+                invaders_colors[(y * grid_width) + (grid_width - 1)] = 0;
             }
         } else if (invaders_dir == MOVE_RIGHT) {
             for (y = 0; y < INVADERS_ROWS; y++) {
-                memmove(&invaders[(y * GRID_WIDTH) + 1], &invaders[(y * GRID_WIDTH) + 0], sizeof(*invaders) * (GRID_WIDTH - 1));
-                invaders[(y * GRID_WIDTH) + 0] = 0;
-                memmove(&invaders_colors[(y * GRID_WIDTH) + 1], &invaders_colors[(y * GRID_WIDTH) + 0], sizeof(*invaders_colors) * (GRID_WIDTH - 1));
-                invaders_colors[(y * GRID_WIDTH) + 0] = 0;
+                memmove(&invaders[(y * grid_width) + 1], &invaders[(y * grid_width) + 0], sizeof(*invaders) * (grid_width - 1));
+                invaders[(y * grid_width) + 0] = 0;
+                memmove(&invaders_colors[(y * grid_width) + 1], &invaders_colors[(y * grid_width) + 0], sizeof(*invaders_colors) * (grid_width - 1));
+                invaders_colors[(y * grid_width) + 0] = 0;
             }
         }
     }
@@ -191,12 +191,12 @@ static bool doit(void)
 
     /* launch invaders bullet */
     if (invaders_bullet_y < 0 && invaders_bullet_x < 0 && (tick_count - invaders_bullet_last_tick) >= INVADERS_BULLET_FREQ && num_invaders > 0) {
-        rnd = rand() % GRID_WIDTH;
+        rnd = rand() % grid_width;
         for (y = INVADERS_ROWS - 1; y >= 0; y--) {
-            for (x = 0; x < GRID_WIDTH; x++) {
-                if (invaders[(y * GRID_WIDTH) + ((x + rnd) % GRID_WIDTH)]) {
+            for (x = 0; x < grid_width; x++) {
+                if (invaders[(y * grid_width) + ((x + rnd) % grid_width)]) {
                     invaders_bullet_y = invaders_y + y + 1;
-                    invaders_bullet_x = (x + rnd) % GRID_WIDTH;
+                    invaders_bullet_x = (x + rnd) % grid_width;
                     break;
                 }
             }
@@ -216,7 +216,7 @@ static bool doit(void)
     }
 
     /* check if invaders bullet is outside grid */
-    if (invaders_bullet_y >= GRID_HEIGHT) {
+    if (invaders_bullet_y >= grid_height) {
         invaders_bullet_y = -1;
         invaders_bullet_x = -1;
     }
@@ -224,10 +224,10 @@ static bool doit(void)
     /* check invaders outside grid or shooter/invaders collision */
     if ((invaders_y + INVADERS_ROWS) > (SHOOTER_Y - 1)) {
         for (y = INVADERS_ROWS - 1; y >= 0; y--) {
-            for (x = 0; x < GRID_WIDTH; x++) {
-                if (invaders[(y * GRID_WIDTH) + x]) {
+            for (x = 0; x < grid_width; x++) {
+                if (invaders[(y * grid_width) + x]) {
                     /* invaders outside grid */
-                    if ((invaders_y + y) >= GRID_HEIGHT) {
+                    if ((invaders_y + y) >= grid_height) {
                         player_bullet_y = -1;
                         player_bullet_x = -1;
                         invaders_bullet_y = -1;
@@ -281,8 +281,8 @@ static bool doit(void)
     /* check player bullet/invaders collision */
     if (player_bullet_y >= 0 && player_bullet_x >= 0) {
         if (player_bullet_y >= invaders_y && player_bullet_y < (invaders_y + INVADERS_ROWS)) {
-            if (invaders[((player_bullet_y - invaders_y) * GRID_WIDTH) + player_bullet_x]) {
-                invaders[((player_bullet_y - invaders_y) * GRID_WIDTH) + player_bullet_x] = 0;
+            if (invaders[((player_bullet_y - invaders_y) * grid_width) + player_bullet_x]) {
+                invaders[((player_bullet_y - invaders_y) * grid_width) + player_bullet_x] = 0;
                 if (num_invaders > 0)
                     num_invaders--;
                 player_bullet_y = -1;
@@ -376,17 +376,17 @@ static void draw(char *screen)
     int x, y;
 
     // background
-    for (y = 0; y < GRID_HEIGHT; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
+    for (y = 0; y < grid_height; y++) {
+        for (x = 0; x < grid_width; x++) {
             set_pixel(screen, y, x, COLOR_BLACK);
         }
     }
 
     // invaders
     for (y = 0; y < INVADERS_ROWS; y++) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            if (invaders[(y * GRID_WIDTH) + x]) {
-                set_pixel(screen, y + invaders_y, x, invaders_colors[(y * GRID_WIDTH) + x]);
+        for (x = 0; x < grid_width; x++) {
+            if (invaders[(y * grid_width) + x]) {
+                set_pixel(screen, y + invaders_y, x, invaders_colors[(y * grid_width) + x]);
             }
         }
     }

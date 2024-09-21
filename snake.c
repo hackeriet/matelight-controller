@@ -52,13 +52,13 @@ static int numpoison;
 static int rotatecnt;
 static int snakelen;
 static int wantedlen;
-static unsigned char grid[GRID_WIDTH * GRID_HEIGHT];
-static unsigned char snake[GRID_WIDTH * GRID_HEIGHT * 2];
-static unsigned char objs[GRID_WIDTH * GRID_HEIGHT * 2];
+static unsigned char grid[MAX_GRID_SIZE];
+static unsigned char snake[MAX_GRID_SIZE * 2];
+static unsigned char objs[MAX_GRID_SIZE * 2];
 
 static void grid_set(int y, int x, unsigned char type)
 {
-    grid[(y * GRID_WIDTH) + x] = type;
+    grid[(y * grid_width) + x] = type;
 }
 
 static void add_object(unsigned char type)
@@ -68,19 +68,19 @@ static void add_object(unsigned char type)
     int objy, objx;
 
     if (type == OBJ_SNAKEHEAD) {
-        ry = GRID_HEIGHT / 2;
-        rx = GRID_WIDTH / 2;
+        ry = grid_height / 2;
+        rx = grid_width / 2;
     } else {
-        ry = rand() % GRID_HEIGHT;
-        rx = rand() % GRID_WIDTH;
+        ry = rand() % grid_height;
+        rx = rand() % grid_width;
     }
 
-    for (yloop = 0; yloop < GRID_HEIGHT; yloop++) {
-        for (xloop = 0; xloop < GRID_WIDTH; xloop++) {
-            objy = (ry + yloop) % GRID_HEIGHT;
-            objx = (rx + xloop) % GRID_WIDTH;
+    for (yloop = 0; yloop < grid_height; yloop++) {
+        for (xloop = 0; xloop < grid_width; xloop++) {
+            objy = (ry + yloop) % grid_height;
+            objx = (rx + xloop) % grid_width;
 
-            if (grid[(objy * GRID_WIDTH) + objx] == OBJ_EMPTY) {
+            if (grid[(objy * grid_width) + objx] == OBJ_EMPTY) {
                 grid_set(objy, objx, type);
 
                 if (type == OBJ_FOOD || type == OBJ_SUPERFOOD) {
@@ -106,7 +106,7 @@ static void add_object(unsigned char type)
 static void remove_obj(int objy, int objx)
 {
     int i, j;
-    unsigned char type = grid[(objy * GRID_WIDTH) + objx];
+    unsigned char type = grid[(objy * grid_width) + objx];
 
     for (i = 0; i < (numfood + numpoison); i++) {
         if (objs[(i * 2) + 0] == objy && objs[(i * 2) + 1] == objx) {
@@ -157,15 +157,16 @@ static void setup_game(bool start)
     wantedlen = SNAKE_START;
     memset(grid, '\0', sizeof(grid));
     memset(snake, '\0', sizeof(snake));
+    memset(objs, '\0', sizeof(objs));
 
     if (game_level) {
-        for (x = 0; x < GRID_WIDTH; x++) {
-            grid[(0 * GRID_WIDTH) + x] = OBJ_WALL;
-            grid[((GRID_HEIGHT - 1) * GRID_WIDTH) + x] = OBJ_WALL;
+        for (x = 0; x < grid_width; x++) {
+            grid[(0 * grid_width) + x] = OBJ_WALL;
+            grid[((grid_height - 1) * grid_width) + x] = OBJ_WALL;
         }
-        for (y = 1; y < (GRID_HEIGHT - 1); y++) {
-            grid[(y * GRID_WIDTH) + 0] = OBJ_WALL;
-            grid[(y * GRID_WIDTH) + (GRID_WIDTH - 1)] = OBJ_WALL;
+        for (y = 1; y < (grid_height - 1); y++) {
+            grid[(y * grid_width) + 0] = OBJ_WALL;
+            grid[(y * grid_width) + (grid_width - 1)] = OBJ_WALL;
         }
     }
 
@@ -221,14 +222,14 @@ static void move_snake(void)
     unsigned char type;
 
     heady = heady + diry;
-    if (heady < 0) heady = GRID_HEIGHT - 1;
-    else if (heady >= GRID_HEIGHT) heady = 0;
+    if (heady < 0) heady = grid_height - 1;
+    else if (heady >= grid_height) heady = 0;
 
     headx = headx + dirx;
-    if (headx < 0) headx = GRID_WIDTH - 1;
-    else if (headx >= GRID_WIDTH) headx = 0;
+    if (headx < 0) headx = grid_width - 1;
+    else if (headx >= grid_width) headx = 0;
 
-    type = grid[(heady * GRID_WIDTH) + headx];
+    type = grid[(heady * grid_width) + headx];
 
     switch (type) {
         case OBJ_WALL:
@@ -339,7 +340,7 @@ static void draw_obj(char *screen, int y, int x)
     unsigned char type;
     int color;
 
-    type = grid[(y * GRID_WIDTH) + x];
+    type = grid[(y * grid_width) + x];
     color = COLOR_EMPTY;
 
     switch (type) {
@@ -444,8 +445,8 @@ static void render(bool *display, char *screen)
     if (game_mode == MODE_GAME) {
         *display = true;
 
-        for (y = 0; y < GRID_HEIGHT; y++) {
-            for (x = 0; x < GRID_WIDTH; x++) {
+        for (y = 0; y < grid_height; y++) {
+            for (x = 0; x < grid_width; x++) {
                 draw_obj(screen, y, x);
             }
         }
