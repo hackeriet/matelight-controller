@@ -11,8 +11,8 @@ import struct
 import tkinter
 import tkinter.ttk
 
-WIDTH = 10
-HEIGHT = 20
+DEFAULT_WIDTH = 10
+DEFAULT_HEIGHT = 20
 UDP_PORT = 21324
 JS_EVENT_BUTTON = 0x01
 JS_EVENT_AXIS = 0x02
@@ -22,7 +22,7 @@ CIRCLE_RADIUS = 18
 
 # https://kno.wled.ge/interfaces/udp-realtime/
 class WLED:
-    def __init__(self, sock, width=WIDTH, height=HEIGHT):
+    def __init__(self, sock, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         self.sock = sock
         self.width = width
         self.height = height
@@ -304,6 +304,8 @@ class Window:
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--width', help='Grid width', type=int, default=DEFAULT_WIDTH)
+parser.add_argument('--height', help='Grid height', type=int, default=DEFAULT_HEIGHT)
 parser.add_argument('--address', help='Listen address', default='127.0.0.1')
 parser.add_argument('--port', help='Listen port', type=int, default=UDP_PORT)
 parser.add_argument('--fifo', help='Joypad FIFO')
@@ -320,7 +322,7 @@ if args.fifo and os.path.exists(args.fifo):
 else:
     joypad = FifoJoypad()
 
-wled = WLED(sock)
+wled = WLED(sock, width=args.width, height=args.height)
 
 udp_thread = threading.Thread(target=wled.udp_receiver, name='udp-receiver', daemon=True)
 udp_thread.start()
