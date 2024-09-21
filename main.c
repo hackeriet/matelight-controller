@@ -25,6 +25,7 @@ static bool joypad_udev = false;
 static bool keyboard = false;
 static int start_game = -1;
 static bool start_on_startup = false;
+static bool debug = false;
 static bool mqtt = false;
 
 static struct sockaddr_storage udp_sockaddr = { 0 };
@@ -43,8 +44,8 @@ static bool display = false;
 static char udp_data[2 + (GRID_WIDTH * GRID_HEIGHT * 3)] = { 0 };
 
 static const struct game *games[] = {
-    &announce_game,
     &debug_game,
+    &announce_game,
     &snake_game,
     &tetris_game,
     &flappy_game,
@@ -313,6 +314,7 @@ static void usage(void)
     fprintf(stderr, "  -u, --udev-hotplug\t\thotpluggable joystick devices\n");
     fprintf(stderr, "  -k, --keyboard\t\tkeyboard input\n");
     fprintf(stderr, "  -g, --game\t\t\tgame name\n");
+    fprintf(stderr, "  -d, --debug\t\t\tdebug mode\n");
     fprintf(stderr, "  -S, --start\t\t\tstart game on startup\n");
     fprintf(stderr, "  -M, --mqtt\t\t\tenable MQTT\n");
     fprintf(stderr, "  -h, --help\t\t\thelp\n");
@@ -328,6 +330,7 @@ static struct option long_options[] = {
     {"keyboard",            no_argument,        NULL,   'k'},
     {"game",                required_argument,  NULL,   'g'},
     {"start",               no_argument,        NULL,   'S'},
+    {"debug",               no_argument,        NULL,   'd'},
     {"mqtt",                no_argument,        NULL,   'M'},
     {"help",                no_argument,        NULL,   'h'},
     {NULL,                  0,                  NULL,   0}
@@ -339,7 +342,7 @@ int main(int argc, char *argv[])
     size_t i;
 
     for (;;) {
-        c = getopt_long(argc, argv, "a:p:m:j:ukg:SMh", long_options, NULL);
+        c = getopt_long(argc, argv, "a:p:m:j:ukg:dSMh", long_options, NULL);
         if (c == -1)
             break;
 
@@ -382,6 +385,10 @@ int main(int argc, char *argv[])
 
             case 'S':
                 start_on_startup = true;
+                break;
+
+            case 'd':
+                debug = true;
                 break;
 
             case 'M':
@@ -474,6 +481,10 @@ int main(int argc, char *argv[])
 
     if (! start_on_startup) {
         do_announce_my_ip();
+    }
+
+    if (debug) {
+        debug_game.activate_func(true);
     }
 
     for (;;) {
