@@ -24,6 +24,7 @@ static struct udev_monitor *udev_monitor = NULL;
 struct termios orig_termios = { 0 };
 static int stdin_flags = -1;
 static int esc_state = 0;
+static int kbd_key_down = 0;
 
 void input_reset(void)
 {
@@ -474,10 +475,12 @@ static void process_keyboard_input(struct joystick *joystick, char key)
     esc_state = 0;
 
     if (key_idx != KEYPAD_NONE) {
+        kbd_key_down = 1;
         joystick->last_key_idx = key_idx;
         joystick->last_key_val = true;
         joystick->key_state = key_idx;
     } else {
+        kbd_key_down = 0;
         joystick->last_key_idx = KEYPAD_NONE;
         joystick->last_key_val = false;
         joystick->key_state = KEYPAD_NONE;
@@ -605,7 +608,7 @@ bool read_joystick(struct joystick **joystick_ptr)
                 if (read(STDIN_FILENO, &key, 1) == 1) {
                     joystick = &joysticks[i];
                     process_keyboard_input(joystick, key);
-                } else if (joysticks[i].last_key_val) {
+                } else if (joysticks[i].last_key_val && !kbd_key_down--) {
                     joystick = &joysticks[i];
                     process_keyboard_input(joystick, '\0');
                 }
