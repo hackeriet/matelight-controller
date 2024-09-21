@@ -34,7 +34,7 @@ static void setup_game(bool start)
     button = 0;
     bird_y = (grid_height / 2);
     for (i = 0; i < NUM_PIPES; i++) {
-        r = rand() % ((grid_height - FLOOR_HEIGHT) - 10);
+        r = rand() % ((grid_height - FLOOR_HEIGHT) - (grid_height / 2));
         pipes_high[i] = 2 + r;
         pipes_low[i] = 2 + r + 8;
     }
@@ -85,7 +85,7 @@ static bool doit(void)
         memmove(pipes_high, &pipes_high[1], sizeof(pipes_high[0]) * (NUM_PIPES - 1));
         memmove(pipes_low, &pipes_low[1], sizeof(pipes_low[0]) * (NUM_PIPES - 1));
         pipes_off += (PIPE_WIDTH + PIPE_SEPARATOR);
-        r = rand() % ((grid_height - FLOOR_HEIGHT) - 10);
+        r = rand() % ((grid_height - FLOOR_HEIGHT) - (grid_height / 2));
         pipes_high[NUM_PIPES - 1] = 2 + r;
         pipes_low[NUM_PIPES - 1] = 2 + r + 8;
     }
