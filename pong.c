@@ -11,25 +11,27 @@
 #define MODE_GAME               0
 #define MODE_DEAD               1
 
-#define PADDLE_HIGH             0
-#define PADDLE_LOW              1
+#define PADDLE_1                0
+#define PADDLE_2                1
 #define PADDLE_WIDTH            4
-#define PADDLE_HIGH_Y           1
-#define PADDLE_LOW_Y            (grid_height - 2)
+#define PADDLE_1_Y              1
+#define PADDLE_2_Y              (grid_height - 2)
 #define MOVE_NONE               0
 #define MOVE_LEFT               -1
 #define MOVE_RIGHT              1
 
 #define DIR_UP                  (M_PI * 1.5)
 #define DIR_DOWN                (M_PI * 0.5)
+#define DIR_LEFT                (M_PI * 1.0)
+#define DIR_RIGHT               (M_PI * 0.0)
 
 static int game_mode = MODE_DEAD;
 static bool game_pause = false;
 
-static int paddle_high_x = 0;
-static int paddle_high_dir = MOVE_NONE;
-static int paddle_low_x = 0;
-static int paddle_low_dir = MOVE_NONE;
+static int paddle_1_pos = 0;
+static int paddle_1_dir = MOVE_NONE;
+static int paddle_2_pos = 0;
+static int paddle_2_dir = MOVE_NONE;
 
 static double ball_y = 0.0;
 static double ball_x = 0.0;
@@ -40,10 +42,10 @@ static void setup_game(bool start)
     game_mode = start ? MODE_GAME : MODE_DEAD;
     game_pause = false;
 
-    paddle_high_x = (grid_width / 2) - (PADDLE_WIDTH / 2);
-    paddle_high_dir = MOVE_NONE;
-    paddle_low_x = (grid_width / 2) - (PADDLE_WIDTH / 2);
-    paddle_low_dir = MOVE_NONE;
+    paddle_1_pos = (grid_width / 2) - (PADDLE_WIDTH / 2);
+    paddle_1_dir = MOVE_NONE;
+    paddle_2_pos = (grid_width / 2) - (PADDLE_WIDTH / 2);
+    paddle_2_dir = MOVE_NONE;
 
     ball_y = (double)(grid_height / 2);
     ball_x = (double)(grid_width / 2);
@@ -67,15 +69,15 @@ static bool doit(void)
     if (game_pause)
         return true;
 
-    /* move high paddle */
-    paddle_high_x += paddle_high_dir;
-    if (paddle_high_x < 0) paddle_high_x = 0;
-    if (paddle_high_x > (grid_width - PADDLE_WIDTH)) paddle_high_x = grid_width - PADDLE_WIDTH;
+    /* move 1. paddle */
+    paddle_1_pos += paddle_1_dir;
+    if (paddle_1_pos < 0) paddle_1_pos = 0;
+    if (paddle_1_pos > (grid_width - PADDLE_WIDTH)) paddle_1_pos = grid_width - PADDLE_WIDTH;
 
-    /* move low paddle */
-    paddle_low_x += paddle_low_dir;
-    if (paddle_low_x < 0) paddle_low_x = 0;
-    if (paddle_low_x > (grid_width - PADDLE_WIDTH)) paddle_low_x = grid_width - PADDLE_WIDTH;
+    /* move 2. paddle */
+    paddle_2_pos += paddle_2_dir;
+    if (paddle_2_pos < 0) paddle_2_pos = 0;
+    if (paddle_2_pos > (grid_width - PADDLE_WIDTH)) paddle_2_pos = grid_width - PADDLE_WIDTH;
 
     /* move ball */
     ball_x += cos(ball_dir);
@@ -88,9 +90,9 @@ static bool doit(void)
         return false;
     }
 
-    /* check ball/high paddle collision */
-    if (lround(ball_y) == PADDLE_HIGH_Y && lround(ball_x) >= paddle_high_x && lround(ball_x) < (paddle_high_x + PADDLE_WIDTH)) {
-        hit_offset = ((((ball_x - (double)paddle_high_x) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
+    /* check ball/1. paddle collision */
+    if (lround(ball_y) == PADDLE_1_Y && lround(ball_x) >= paddle_1_pos && lround(ball_x) < (paddle_1_pos + PADDLE_WIDTH)) {
+        hit_offset = ((((ball_x - (double)paddle_1_pos) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
 
         if (hit_offset > 5.0) {
             ball_dir = DIR_DOWN - ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
@@ -104,9 +106,9 @@ static bool doit(void)
         ball_y += 1.0;
     }
 
-    /* check ball/low paddle collision */
-    if (lround(ball_y) == PADDLE_LOW_Y && lround(ball_x) >= paddle_low_x && lround(ball_x) < (paddle_low_x + PADDLE_WIDTH)) {
-        hit_offset = ((((ball_x - (double)paddle_low_x) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
+    /* check ball/2. paddle collision */
+    if (lround(ball_y) == PADDLE_2_Y && lround(ball_x) >= paddle_2_pos && lround(ball_x) < (paddle_2_pos + PADDLE_WIDTH)) {
+        hit_offset = ((((ball_x - (double)paddle_2_pos) + 0.5) / (double)PADDLE_WIDTH) * 2.0) - 1.0;
 
         if (hit_offset > 0.5) {
             ball_dir = DIR_UP + ((M_PI * 0.3) * ((double)rand() / (double)RAND_MAX));
@@ -137,10 +139,10 @@ static bool doit(void)
 
 static void move(int paddle, int direction)
 {
-    if (paddle == PADDLE_HIGH) {
-        paddle_high_dir = direction;
-    } else if (paddle == PADDLE_LOW) {
-        paddle_low_dir = direction;
+    if (paddle == PADDLE_1) {
+        paddle_1_dir = direction;
+    } else if (paddle == PADDLE_2) {
+        paddle_2_dir = direction;
     }
 }
 
@@ -154,7 +156,7 @@ static void tick(void)
 
 static void input(int player, int key_idx, bool key_val, int key_state)
 {
-    int paddle1, paddle2;
+    int paddle_idx_1, paddle_idx_2;
 
     (void)key_state;
 
@@ -169,30 +171,30 @@ static void input(int player, int key_idx, bool key_val, int key_state)
             }
 
             if ((player % 2) == 0) {
-                paddle1 = PADDLE_HIGH;
-                paddle2 = PADDLE_LOW;
+                paddle_idx_1 = PADDLE_1;
+                paddle_idx_2 = PADDLE_2;
             } else {
-                paddle1 = PADDLE_LOW;
-                paddle2 = PADDLE_HIGH;
+                paddle_idx_1 = PADDLE_2;
+                paddle_idx_2 = PADDLE_1;
             }
 
             if (key_idx == KEYPAD_LEFT || key_idx == KEYPAD_RIGHT) {
                 if (key_idx == KEYPAD_LEFT && key_val) {
-                    move(paddle1, MOVE_LEFT);
+                    move(paddle_idx_1, MOVE_LEFT);
                 } else if (key_idx == KEYPAD_RIGHT && key_val) {
-                    move(paddle1, MOVE_RIGHT);
+                    move(paddle_idx_1, MOVE_RIGHT);
                 } else {
-                    move(paddle1, MOVE_NONE);
+                    move(paddle_idx_1, MOVE_NONE);
                 }
             }
 
             if (key_idx == KEYPAD_B || key_idx == KEYPAD_A) {
                 if (key_idx == KEYPAD_B && key_val) {
-                    move(paddle2, MOVE_LEFT);
+                    move(paddle_idx_2, MOVE_LEFT);
                 } else if (key_idx == KEYPAD_A && key_val) {
-                    move(paddle2, MOVE_RIGHT);
+                    move(paddle_idx_2, MOVE_RIGHT);
                 } else {
-                    move(paddle2, MOVE_NONE);
+                    move(paddle_idx_2, MOVE_NONE);
                 }
             }
             break;
@@ -226,14 +228,14 @@ static void draw(char *screen)
         }
     }
 
-    // high paddle
+    // 1. paddle
     for (x = 0; x < PADDLE_WIDTH; x++) {
-        set_pixel(screen, PADDLE_HIGH_Y, paddle_high_x + x, COLOR_WHITE);
+        set_pixel(screen, PADDLE_1_Y, paddle_1_pos + x, COLOR_WHITE);
     }
 
-    // low paddle
+    // 2. paddle
     for (x = 0; x < PADDLE_WIDTH; x++) {
-        set_pixel(screen, PADDLE_LOW_Y, paddle_low_x + x, COLOR_WHITE);
+        set_pixel(screen, PADDLE_2_Y, paddle_2_pos + x, COLOR_WHITE);
     }
 
     // ball
