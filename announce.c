@@ -137,7 +137,10 @@ static void tick(void)
 {
     tick_count++;
 
-    announce_pos = -grid_height + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
+    if (grid_widescreen)
+        announce_pos = -grid_height + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
+    else
+        announce_pos = -grid_width + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
 
     if (announce_pos > ((int)announce_wlen*FONT_SIZE)) {
         game_mode = MODE_DEAD;
@@ -184,7 +187,11 @@ static void input(int player, int key_idx, bool key_val, int key_state)
 
 static bool get_glyph_pix(const char *glyph, int y, int x)
 {
-    return (glyph[(FONT_SIZE - 1) - x] >> y) & 1;
+    if (grid_widescreen) {
+        return (glyph[y] >> x) & 1;
+    } else {
+        return (glyph[(FONT_SIZE - 1) - x] >> y) & 1;
+    }
 }
 
 static void draw(char *screen)
@@ -196,25 +203,50 @@ static void draw(char *screen)
     const char *glyph;
     bool pix;
 
-    for (y = 0; y < grid_height; y++) {
-        font_idx = (announce_pos + y) / FONT_SIZE;
-        font_off = (announce_pos + y) % FONT_SIZE;
-        if (font_idx >= 0 && font_idx < (int)announce_wlen) {
-            ch = announce_wtext[font_idx];
-        } else {
-            ch = (wchar_t)' ';
-        }
-        glyph = get_font8x8(ch);
-
+    if (grid_widescreen) {
         for (x = 0; x < grid_width; x++) {
-            pix = false;
-            if (x >= ((grid_width - FONT_SIZE) / 2) && x < FONT_SIZE + ((grid_width - FONT_SIZE) / 2)) {
-                pix = get_glyph_pix(glyph, font_off, x - ((grid_width - FONT_SIZE) / 2));
-            }
-            if (pix) {
-                set_pixel(screen, y, x, announce_color);
+            font_idx = (announce_pos + x) / FONT_SIZE;
+            font_off = (announce_pos + x) % FONT_SIZE;
+            if (font_idx >= 0 && font_idx < (int)announce_wlen) {
+                ch = announce_wtext[font_idx];
             } else {
-                set_pixel(screen, y, x, announce_bgcolor);
+                ch = (wchar_t)' ';
+            }
+            glyph = get_font8x8(ch);
+
+            for (y = 0; y < grid_height; y++) {
+                pix = false;
+                if (y >= ((grid_height - FONT_SIZE) / 2) && y < FONT_SIZE + ((grid_height - FONT_SIZE) / 2)) {
+                    pix = get_glyph_pix(glyph, y - ((grid_height - FONT_SIZE) / 2), font_off);
+                }
+                if (pix) {
+                    set_pixel(screen, y, x, announce_color);
+                } else {
+                    set_pixel(screen, y, x, announce_bgcolor);
+                }
+            }
+        }
+    } else {
+        for (y = 0; y < grid_height; y++) {
+            font_idx = (announce_pos + y) / FONT_SIZE;
+            font_off = (announce_pos + y) % FONT_SIZE;
+            if (font_idx >= 0 && font_idx < (int)announce_wlen) {
+                ch = announce_wtext[font_idx];
+            } else {
+                ch = (wchar_t)' ';
+            }
+            glyph = get_font8x8(ch);
+
+            for (x = 0; x < grid_width; x++) {
+                pix = false;
+                if (x >= ((grid_width - FONT_SIZE) / 2) && x < FONT_SIZE + ((grid_width - FONT_SIZE) / 2)) {
+                    pix = get_glyph_pix(glyph, font_off, x - ((grid_width - FONT_SIZE) / 2));
+                }
+                if (pix) {
+                    set_pixel(screen, y, x, announce_color);
+                } else {
+                    set_pixel(screen, y, x, announce_bgcolor);
+                }
             }
         }
     }
