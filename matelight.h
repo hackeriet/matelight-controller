@@ -111,6 +111,7 @@ struct game {
 
 extern int grid_width;
 extern int grid_height;
+extern bool grid_widescreen;
 
 extern double time_val;
 extern int ticks;

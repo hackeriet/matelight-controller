@@ -19,6 +19,7 @@
 
 int grid_width = DEFAULT_GRID_WIDTH;
 int grid_height = DEFAULT_GRID_HEIGHT;
+bool grid_widescreen = true;
 static char *address = NULL;
 static int wled_port = 21324;
 static char *mdns_description = NULL;
@@ -437,6 +438,8 @@ int main(int argc, char *argv[])
     if (optind < argc)
         usage();
 
+    grid_widescreen = (grid_width > grid_height || (grid_width >= 16 && grid_height >= 10));
+
     if (! address && ! mdns_description) {
         fprintf(stderr, "Either WLED address or WLED MDNS description must be specified.\n");;
         usage();
@@ -453,6 +456,7 @@ int main(int argc, char *argv[])
     }
 
     fprintf(stderr, "starting matelight controller\n");
+    fprintf(stderr, "grid resolution: %d x %d, grid type: %s\n", grid_width, grid_height, grid_widescreen ? "widescreen" : "highscreen");
 
     (void)setlocale(LC_ALL, "C.UTF-8");
 
