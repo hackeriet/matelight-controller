@@ -21,7 +21,6 @@ static size_t announce_wlen = '\0';
 static wchar_t *announce_wtext = NULL;
 static unsigned int announce_color = COLOR_RGB(0xff, 0xff, 0xff);
 static unsigned int announce_bgcolor = COLOR_RGB(0x00, 0x00, 0x00);
-static int announce_rotate = 0;
 static double announce_speed = 1.0;
 static int announce_pos = 0;
 
@@ -39,7 +38,7 @@ static void reset(void)
     }
 }
 
-void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
+void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, double speed)
 {
     mbstate_t state = { 0 };
     size_t len;
@@ -77,7 +76,6 @@ void set_announce_text(const char *text, unsigned int color, unsigned int bgcolo
 
     announce_color = color;
     announce_bgcolor = bgcolor;
-    announce_rotate = rotate;
     announce_speed = speed;
     announce_pos = 0;
 }
@@ -184,13 +182,9 @@ static void input(int player, int key_idx, bool key_val, int key_state)
     }
 }
 
-static bool get_glyph_pix(const char *glyph, int y, int x, int rotate)
+static bool get_glyph_pix(const char *glyph, int y, int x)
 {
-    if (rotate) {
-        return (glyph[(FONT_SIZE - 1) - x] >> y) & 1;
-    } else {
-        return (glyph[y] >> x) & 1;
-    }
+    return (glyph[(FONT_SIZE - 1) - x] >> y) & 1;
 }
 
 static void draw(char *screen)
@@ -215,7 +209,7 @@ static void draw(char *screen)
         for (x = 0; x < grid_width; x++) {
             pix = false;
             if (x >= ((grid_width - FONT_SIZE) / 2) && x < FONT_SIZE + ((grid_width - FONT_SIZE) / 2)) {
-                pix = get_glyph_pix(glyph, font_off, x - ((grid_width - FONT_SIZE) / 2), announce_rotate);
+                pix = get_glyph_pix(glyph, font_off, x - ((grid_width - FONT_SIZE) / 2));
             }
             if (pix) {
                 set_pixel(screen, y, x, announce_color);

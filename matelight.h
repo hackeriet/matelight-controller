@@ -119,11 +119,11 @@ extern int ticks;
 extern const char *wled_ds;
 extern void update_wled_ip(const char *address);
 
-extern void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
-extern void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+extern void do_announce(const char *text, unsigned int color, unsigned int bgcolor, double speed);
+extern void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, double speed);
 
 extern const struct game announce_game;
-extern void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed);
+extern void set_announce_text(const char *text, unsigned int color, unsigned int bgcolor, double speed);
 
 extern const struct game debug_game;
 

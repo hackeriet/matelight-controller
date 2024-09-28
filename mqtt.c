@@ -113,7 +113,7 @@ static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto
             memcpy(text, msg->payload, msg->payloadlen);
             text[msg->payloadlen] = '\0';
             strip_garbage(text);
-            do_announce_async(text, COLOR_BLACK, COLOR_YELLOW, 1, 5.0);
+            do_announce_async(text, COLOR_BLACK, COLOR_YELLOW, 5.0);
         }
     }
 }

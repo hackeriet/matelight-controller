@@ -66,7 +66,6 @@ static bool async_announce = false;
 static char *async_announce_text = NULL;
 static unsigned int async_announce_color = COLOR_WHITE;
 static unsigned int async_announce_bgcolor = COLOR_BLACK;
-static int async_announce_rotate = 1;
 static double async_announce_speed = 5.0;
 
 static const int konami_code[] = {
@@ -130,7 +129,7 @@ static void handle_input(void)
             if (get_game()->activate_func) {
                 get_game()->activate_func(false);
             }
-            do_announce("HACK THE PLANET", COLOR_BLACK, COLOR_YELLOW, 1, 10.0);
+            do_announce("HACK THE PLANET", COLOR_BLACK, COLOR_YELLOW, 10.0);
         }
 
         if (get_game()->input_func) {
@@ -146,9 +145,9 @@ static void handle_input(void)
             snprintf(text, sizeof(text), "%d joypads", new_joystick_cnt);
         }
         if (new_joystick_cnt > joystick_cnt) {
-            do_announce(text, COLOR_GREEN, COLOR_BLACK, 1, 10.0);
+            do_announce(text, COLOR_GREEN, COLOR_BLACK, 10.0);
         } else {
-            do_announce(text, COLOR_RED, COLOR_BLACK, 1, 10.0);
+            do_announce(text, COLOR_RED, COLOR_BLACK, 10.0);
         }
         joystick_cnt = new_joystick_cnt;
     }
@@ -161,12 +160,12 @@ static double get_time_val(void)
     return (double)tv.tv_sec + ((double)tv.tv_usec / 1000000.0);
 }
 
-void do_announce(const char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
+void do_announce(const char *text, unsigned int color, unsigned int bgcolor, double speed)
 {
     if (get_game()->idle_func()) {
         if (announce_game.idle_func()) {
             fprintf(stderr, "announcing text: %s\n", text);
-            set_announce_text(text, color, bgcolor, rotate, speed);
+            set_announce_text(text, color, bgcolor, speed);
             announce_game.activate_func(true);
         } else {
             fprintf(stderr, "not announcing text (announce already in progress): %s\n", text);
@@ -195,10 +194,10 @@ void do_announce_my_ip(void)
     }
 
     snprintf(text, sizeof(text), "RPI: %s, WLED: %s", ip_address, wled_ip_address);
-    do_announce(text, COLOR_BLUE, COLOR_BLACK, 1, 10.0);
+    do_announce(text, COLOR_BLUE, COLOR_BLACK, 10.0);
 }
 
-void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int rotate, double speed)
+void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, double speed)
 {
     if (pthread_mutex_lock(&mutex) != 0)
         return;
@@ -212,7 +211,6 @@ void do_announce_async(char *text, unsigned int color, unsigned int bgcolor, int
     async_announce_text = text;
     async_announce_color = color;
     async_announce_bgcolor = bgcolor;
-    async_announce_rotate = rotate;
     async_announce_speed = speed;
 
     (void)pthread_mutex_unlock(&mutex);
@@ -228,7 +226,7 @@ static void handle_announce_async(void)
         return;
     }
 
-    do_announce(async_announce_text, async_announce_color, async_announce_bgcolor, async_announce_rotate, async_announce_speed);
+    do_announce(async_announce_text, async_announce_color, async_announce_bgcolor, async_announce_speed);
 
     async_announce = false;
     if (async_announce_text)
@@ -236,7 +234,6 @@ static void handle_announce_async(void)
     async_announce_text = NULL;
     async_announce_color = COLOR_WHITE;
     async_announce_bgcolor = COLOR_BLACK;
-    async_announce_rotate = 1;
     async_announce_speed = 5.0;
 
     (void)pthread_mutex_unlock(&mutex);
