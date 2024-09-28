@@ -245,6 +245,7 @@ void update_wled_ip(const char *address)
         return;
 
     strncpy(wled_ip_new, address, sizeof(wled_ip_new));
+    wled_ip_new[sizeof(wled_ip_new) - 1] = '\0';
 
     (void)pthread_mutex_unlock(&mutex);
 }

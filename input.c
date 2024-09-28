@@ -145,11 +145,13 @@ bool open_joystick(const char *devnode, struct stat *st, bool check_joydev)
     joystick->type = INPUT_JOYSTICK;
     joystick->fd = fd;
     strncpy(joystick->devnode, devnode, sizeof(joystick->devnode));
+    joystick->devnode[sizeof(joystick->devnode) - 1] = '\0';
     joystick->dev = st->st_rdev;
 
     joystick->axes = axes;
     joystick->buttons = buttons;
-    memcpy(joystick->name, name, sizeof(joystick->name));
+    strncpy(joystick->name, name, sizeof(joystick->name));
+    joystick->name[sizeof(joystick->name) - 1] = '\0';
 
     joystick->player = player;
 
@@ -235,11 +237,13 @@ void init_keyboard(void)
     joystick->type = INPUT_KEYBOARD;
     joystick->fd = STDIN_FILENO;
     strncpy(joystick->devnode, "/dev/stdin", sizeof(joystick->devnode));
+    joystick->devnode[sizeof(joystick->devnode) - 1] = '\0';
     joystick->dev = -1;
 
     joystick->axes = 2;
     joystick->buttons = 4;
-    memcpy(joystick->name, "keyboard", sizeof(joystick->name));
+    strncpy(joystick->name, "keyboard", sizeof(joystick->name));
+    joystick->name[sizeof(joystick->name) - 1] = '\0';
 
     joystick->player = player;
 
