@@ -138,9 +138,9 @@ static void tick(void)
     tick_count++;
 
     if (grid_widescreen)
-        announce_pos = -grid_height + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
-    else
         announce_pos = -grid_width + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
+    else
+        announce_pos = -grid_height + (int)(((double)tick_count * announce_game.tick_freq) * announce_speed);
 
     if (announce_pos > ((int)announce_wlen*FONT_SIZE)) {
         game_mode = MODE_DEAD;
